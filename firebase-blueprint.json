@@ -1,0 +1,329 @@
+{
+  "entities": {
+    "SiteContent": {
+      "title": "SiteContent",
+      "description": "Published storefront CMS layout, text fields, visibility toggles, and payment bank configuration.",
+      "type": "object",
+      "properties": {
+        "brandName": { "type": "string", "maxLength": 80 },
+        "brandVisible": { "type": "boolean" },
+        "brandLogoUrl": { "type": "string", "maxLength": 300 },
+        "brandLogoVisible": { "type": "boolean" },
+        "navItems": { "type": "array" },
+        "hero": { "type": "object" },
+        "philosophy": { "type": "object" },
+        "coursesSection": { "type": "object" },
+        "gallerySection": { "type": "object" },
+        "artisansSection": { "type": "object" },
+        "contactSection": { "type": "object" },
+        "paymentConfig": { "type": "object" },
+        "footer": { "type": "object" },
+        "customBlocks": { "type": "array" },
+        "updatedBy": { "type": "string", "maxLength": 120 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["brandName", "brandVisible", "navItems", "hero", "philosophy", "coursesSection", "gallerySection", "artisansSection", "contactSection", "paymentConfig", "footer", "customBlocks", "updatedBy", "updatedAt"]
+    },
+    "CmsRevision": {
+      "title": "CmsRevision",
+      "description": "Saved CMS revision snapshot for recalling and re-editing previous versions.",
+      "type": "object",
+      "properties": {
+        "revisionTitle": { "type": "string", "maxLength": 120 },
+        "note": { "type": "string", "maxLength": 500 },
+        "targetType": { "type": "string", "enum": ["site_content", "full_snapshot"], "maxLength": 40 },
+        "snapshot": { "type": "object" },
+        "editorName": { "type": "string", "maxLength": 80 },
+        "editorPhone": { "type": "string", "maxLength": 30 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["revisionTitle", "note", "targetType", "snapshot", "editorName", "editorPhone", "ownerUid", "createdAt"]
+    },
+    "MediaAsset": {
+      "title": "MediaAsset",
+      "description": "Uploaded image stored in Firestore for CMS or bank transfer verification.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 120 },
+        "mimeType": { "type": "string", "maxLength": 60 },
+        "dataUrl": { "type": "string", "maxLength": 900000 },
+        "sizeBytes": { "type": "number" },
+        "category": { "type": "string", "enum": ["cms", "course", "gallery", "artisan", "receipt"], "maxLength": 30 },
+        "isPublic": { "type": "boolean" },
+        "uploadedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "mimeType", "dataUrl", "sizeBytes", "category", "isPublic", "uploadedByUid", "createdAt"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Workshop course listing with schedule, pricing, materials, and visibility control.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 120 },
+        "category": { "type": "string", "maxLength": 60 },
+        "level": { "type": "string", "maxLength": 40 },
+        "duration": { "type": "string", "maxLength": 60 },
+        "startTime": { "type": "string", "maxLength": 10 },
+        "endTime": { "type": "string", "maxLength": 10 },
+        "totalSessions": { "type": "number" },
+        "sessionDates": { "type": "array", "items": { "type": "string", "maxLength": 20 } },
+        "courseStatus": { "type": "string", "enum": ["recruiting", "ongoing", "completed"], "maxLength": 30 },
+        "instructorPayPerSession": { "type": "number" },
+        "price": { "type": "number" },
+        "maxSeats": { "type": "number" },
+        "enrolledCount": { "type": "number" },
+        "scheduleText": { "type": "string", "maxLength": 160 },
+        "location": { "type": "string", "maxLength": 120 },
+        "summary": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "materialsIncluded": { "type": "string", "maxLength": 1000 },
+        "imageUrl": { "type": "string", "maxLength": 300 },
+        "imageVisible": { "type": "boolean" },
+        "artisanId": { "type": "string", "maxLength": 128 },
+        "artisanName": { "type": "string", "maxLength": 80 },
+        "isVisible": { "type": "boolean" },
+        "order": { "type": "number" },
+        "fieldVisibility": { "type": "object", "description": "Per-field storefront visibility toggles" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "level", "duration", "price", "maxSeats", "enrolledCount", "scheduleText", "location", "summary", "description", "materialsIncluded", "imageUrl", "imageVisible", "artisanId", "artisanName", "isVisible", "order", "createdAt", "updatedAt"]
+    },
+    "Artisan": {
+      "title": "Artisan",
+      "description": "Workshop instructor profile with portrait, bio, and visibility control.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 80 },
+        "specialty": { "type": "string", "maxLength": 100 },
+        "yearsExperience": { "type": "number" },
+        "phone": { "type": "string", "maxLength": 30 },
+        "defaultSessionPay": { "type": "number" },
+        "quote": { "type": "string", "maxLength": 300 },
+        "bio": { "type": "string", "maxLength": 2000 },
+        "avatarUrl": { "type": "string", "maxLength": 300 },
+        "imageVisible": { "type": "boolean" },
+        "isVisible": { "type": "boolean" },
+        "order": { "type": "number" },
+        "fieldVisibility": { "type": "object", "description": "Per-field storefront visibility toggles" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "specialty", "yearsExperience", "quote", "bio", "avatarUrl", "imageVisible", "isVisible", "order", "createdAt", "updatedAt"]
+    },
+    "GalleryWork": {
+      "title": "GalleryWork",
+      "description": "Curated craft gallery artwork with story, image, and visibility control.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 120 },
+        "category": { "type": "string", "maxLength": 60 },
+        "artisanName": { "type": "string", "maxLength": 80 },
+        "year": { "type": "string", "maxLength": 20 },
+        "story": { "type": "string", "maxLength": 1000 },
+        "imageUrl": { "type": "string", "maxLength": 300 },
+        "imageVisible": { "type": "boolean" },
+        "isVisible": { "type": "boolean" },
+        "order": { "type": "number" },
+        "fieldVisibility": { "type": "object", "description": "Per-field storefront visibility toggles" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "category", "artisanName", "year", "story", "imageUrl", "imageVisible", "isVisible", "order", "createdAt", "updatedAt"]
+    },
+    "Member": {
+      "title": "Member",
+      "description": "Student member profile authenticated with phone number and 6-digit PIN hash.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "phone": { "type": "string", "maxLength": 30, "pattern": "^[0-9+\\-\\s]{6,20}$" },
+        "name": { "type": "string", "maxLength": 80 },
+        "email": { "type": "string", "maxLength": 120 },
+        "pinHash": { "type": "string", "maxLength": 128 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["active", "suspended"], "maxLength": 20 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "phone", "name", "email", "pinHash", "notes", "status", "createdAt", "updatedAt"]
+    },
+    "Enrollment": {
+      "title": "Enrollment",
+      "description": "Course enrollment and dual-track payment verification record.",
+      "type": "object",
+      "properties": {
+        "enrollmentCode": { "type": "string", "maxLength": 40 },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "memberId": { "type": "string", "maxLength": 128 },
+        "memberName": { "type": "string", "maxLength": 80 },
+        "memberPhone": { "type": "string", "maxLength": 30 },
+        "courseId": { "type": "string", "maxLength": 128 },
+        "courseTitle": { "type": "string", "maxLength": 120 },
+        "courseCategory": { "type": "string", "maxLength": 60 },
+        "sessionDate": { "type": "string", "maxLength": 120 },
+        "seats": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "refundAmount": { "type": "number" },
+        "refundReason": { "type": "string", "maxLength": 300 },
+        "refundedAt": { "type": "string", "maxLength": 40 },
+        "paymentMethod": { "type": "string", "enum": ["online_card", "bank_transfer"], "maxLength": 30 },
+        "paymentStatus": { "type": "string", "enum": ["pending_payment", "awaiting_verification", "paid", "needs_revision", "cancelled", "refunded"], "maxLength": 40 },
+        "cardLastFour": { "type": "string", "maxLength": 10 },
+        "transferLastFive": { "type": "string", "maxLength": 10 },
+        "receiptMediaId": { "type": "string", "maxLength": 128 },
+        "studentNote": { "type": "string", "maxLength": 500 },
+        "adminNote": { "type": "string", "maxLength": 500 },
+        "verifiedBy": { "type": "string", "maxLength": 80 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["enrollmentCode", "ownerUid", "memberId", "memberName", "memberPhone", "courseId", "courseTitle", "courseCategory", "sessionDate", "seats", "totalAmount", "paymentMethod", "paymentStatus", "cardLastFour", "transferLastFive", "receiptMediaId", "studentNote", "adminNote", "verifiedBy", "createdAt", "updatedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notification synchronized to member upon payment confirmation or enrollment update.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "memberId": { "type": "string", "maxLength": 128 },
+        "enrollmentId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 120 },
+        "message": { "type": "string", "maxLength": 600 },
+        "type": { "type": "string", "enum": ["payment_verified", "payment_rejected", "enrollment_created", "system"], "maxLength": 30 },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "readAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "memberId", "enrollmentId", "title", "message", "type", "isRead", "createdAt"]
+    },
+    "ContactSubmission": {
+      "title": "ContactSubmission",
+      "description": "Visitor contact and private workshop inquiry submission.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 80 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 120 },
+        "inquiryType": { "type": "string", "maxLength": 60 },
+        "message": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["new", "in_progress", "resolved"], "maxLength": 30 },
+        "adminReplyNote": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "name", "phone", "email", "inquiryType", "message", "status", "adminReplyNote", "createdAt", "updatedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Administrator account with phone, 6-digit PIN hash, and granular module permissions.",
+      "type": "object",
+      "properties": {
+        "phone": { "type": "string", "maxLength": 30 },
+        "name": { "type": "string", "maxLength": 80 },
+        "roleTitle": { "type": "string", "maxLength": 80 },
+        "boundEmail": { "type": "string", "maxLength": 120 },
+        "pinHash": { "type": "string", "maxLength": 128 },
+        "isSuperAdmin": { "type": "boolean" },
+        "isActive": { "type": "boolean" },
+        "permissions": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["phone", "name", "roleTitle", "boundEmail", "pinHash", "isSuperAdmin", "isActive", "permissions", "createdAt", "updatedAt"]
+    },
+    "AdminIdentity": {
+      "title": "AdminIdentity",
+      "description": "Authorized Firebase UID lookup document granting Firestore admin rule access.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 120 },
+        "adminUserId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "adminUserId", "createdAt"]
+    },
+    "InstructorSessionRecord": {
+      "title": "InstructorSessionRecord",
+      "description": "Per-class session teaching log recording instructor attendance, leave, salary, and monthly accounting.",
+      "type": "object",
+      "properties": {
+        "artisanId": { "type": "string", "maxLength": 128 },
+        "artisanName": { "type": "string", "maxLength": 80 },
+        "courseId": { "type": "string", "maxLength": 128 },
+        "courseTitle": { "type": "string", "maxLength": 120 },
+        "sessionDate": { "type": "string", "maxLength": 20 },
+        "monthKey": { "type": "string", "maxLength": 10 },
+        "startTime": { "type": "string", "maxLength": 10 },
+        "endTime": { "type": "string", "maxLength": 10 },
+        "durationText": { "type": "string", "maxLength": 60 },
+        "attendanceStatus": { "type": "string", "enum": ["present", "leave", "substitute", "cancelled"], "maxLength": 20 },
+        "substituteName": { "type": "string", "maxLength": 80 },
+        "payAmount": { "type": "number" },
+        "payStatus": { "type": "string", "enum": ["unpaid", "paid"], "maxLength": 20 },
+        "note": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["artisanId", "artisanName", "courseId", "courseTitle", "sessionDate", "monthKey", "startTime", "endTime", "durationText", "attendanceStatus", "substituteName", "payAmount", "payStatus", "note", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/site_content/{docId}": {
+      "schema": { "$ref": "#/entities/SiteContent" },
+      "description": "Stores published website copy, layouts, and visibility toggles."
+    },
+    "/cms_revisions/{revisionId}": {
+      "schema": { "$ref": "#/entities/CmsRevision" },
+      "description": "Stores historical CMS snapshots for version rollback and re-editing."
+    },
+    "/media_assets/{assetId}": {
+      "schema": { "$ref": "#/entities/MediaAsset" },
+      "description": "Stores uploaded local images for CMS sections and payment receipts."
+    },
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Stores workshop course catalog items."
+    },
+    "/artisans/{artisanId}": {
+      "schema": { "$ref": "#/entities/Artisan" },
+      "description": "Stores workshop artisan profiles."
+    },
+    "/gallery_works/{workId}": {
+      "schema": { "$ref": "#/entities/GalleryWork" },
+      "description": "Stores curated gallery exhibition items."
+    },
+    "/members/{memberId}": {
+      "schema": { "$ref": "#/entities/Member" },
+      "description": "Stores student member accounts protected by ownerUid and admin access."
+    },
+    "/enrollments/{enrollmentId}": {
+      "schema": { "$ref": "#/entities/Enrollment" },
+      "description": "Stores course registrations and payment verification records."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores member notifications triggered on payment confirmation."
+    },
+    "/contact_submissions/{submissionId}": {
+      "schema": { "$ref": "#/entities/ContactSubmission" },
+      "description": "Stores visitor contact and private inquiry forms."
+    },
+    "/admin_users/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Stores role-based admin accounts and permission matrices."
+    },
+    "/admin_identities/{uid}": {
+      "schema": { "$ref": "#/entities/AdminIdentity" },
+      "description": "Maps verified Firebase UIDs to admin privileges."
+    },
+    "/instructor_sessions/{recordId}": {
+      "schema": { "$ref": "#/entities/InstructorSessionRecord" },
+      "description": "Stores per-class instructor attendance, leave, salary, and monthly accounting records."
+    }
+  }
+}

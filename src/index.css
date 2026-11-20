@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-canvas: #fcf9f8;
+    --bg-surface-low: #f6f3f2;
+    --bg-washi-clay: #e8ded8;
+    --bg-card: #ffffff;
+    --primary: #8c5e43;
+    --primary-dark: #70472d;
+    --secondary: #73594c;
+    --amber-terracotta: #b0704c;
+    --warm-border: #e0d8d3;
+    --ink-charcoal: #1b1c1c;
+    --ink-bark: #51443d;
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--ink-charcoal);
+    font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.7;
+  }
+
+  h1, h2, h3, h4, .font-serif-editorial {
+    font-family: 'Noto Serif TC', Georgia, serif;
+    text-wrap: balance;
+  }
+}
+
+.shadow-warm {
+  box-shadow: 0 8px 30px rgba(140, 94, 67, 0.07);
+}
+
+.shadow-warm-hover {
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shadow-warm-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 38px rgba(140, 94, 67, 0.12);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

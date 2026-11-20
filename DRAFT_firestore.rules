@@ -1,0 +1,499 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core identity and validation primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isSuperAdminEmail() {
+      return isVerifiedUser() && request.auth.token.email == 'timelessinheritancemission@gmail.com';
+    }
+
+    function isAdmin() {
+      return isSuperAdminEmail() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admin_identities/$(request.auth.uid))
+      );
+    }
+
+    function isValidSiteContent(data) {
+      return data.keys().hasAll([
+        'brandName', 'brandVisible', 'navItems', 'hero', 'philosophy',
+        'coursesSection', 'gallerySection', 'artisansSection', 'contactSection',
+        'paymentConfig', 'footer', 'customBlocks', 'updatedBy', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'brandName', 'brandVisible', 'brandLogoUrl', 'brandLogoVisible', 'navItems', 'hero', 'philosophy',
+        'coursesSection', 'gallerySection', 'artisansSection', 'contactSection',
+        'paymentConfig', 'footer', 'customBlocks', 'updatedBy', 'updatedAt'
+      ]) &&
+      data.brandName is string && data.brandName.size() > 0 && data.brandName.size() <= 80 &&
+      data.brandVisible is bool &&
+      (!('brandLogoUrl' in data) || (data.brandLogoUrl is string && data.brandLogoUrl.size() <= 300)) &&
+      (!('brandLogoVisible' in data) || data.brandLogoVisible is bool) &&
+      data.navItems is list && data.navItems.size() <= 12 &&
+      data.hero is map &&
+      data.philosophy is map &&
+      data.coursesSection is map &&
+      data.gallerySection is map &&
+      data.artisansSection is map &&
+      data.contactSection is map &&
+      data.paymentConfig is map &&
+      data.footer is map &&
+      data.customBlocks is list && data.customBlocks.size() <= 20 &&
+      data.updatedBy is string && data.updatedBy.size() <= 120 &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidCmsRevision(data) {
+      return data.keys().hasAll([
+        'revisionTitle', 'note', 'targetType', 'snapshot', 'editorName', 'editorPhone', 'ownerUid', 'createdAt'
+      ]) && data.keys().hasOnly([
+        'revisionTitle', 'note', 'targetType', 'snapshot', 'editorName', 'editorPhone', 'ownerUid', 'createdAt'
+      ]) &&
+      data.revisionTitle is string && data.revisionTitle.size() > 0 && data.revisionTitle.size() <= 120 &&
+      data.note is string && data.note.size() <= 500 &&
+      data.targetType in ['site_content', 'full_snapshot'] &&
+      data.snapshot is map &&
+      data.editorName is string && data.editorName.size() <= 80 &&
+      data.editorPhone is string && data.editorPhone.size() <= 30 &&
+      data.ownerUid is string && data.ownerUid == request.auth.uid &&
+      data.createdAt == request.time;
+    }
+
+    function isValidMediaAsset(data) {
+      return data.keys().hasAll([
+        'title', 'mimeType', 'dataUrl', 'sizeBytes', 'category', 'isPublic', 'uploadedByUid', 'createdAt'
+      ]) && data.keys().hasOnly([
+        'title', 'mimeType', 'dataUrl', 'sizeBytes', 'category', 'isPublic', 'uploadedByUid', 'createdAt'
+      ]) &&
+      data.title is string && data.title.size() > 0 && data.title.size() <= 120 &&
+      data.mimeType is string && data.mimeType.size() > 0 && data.mimeType.size() <= 60 &&
+      data.dataUrl is string && data.dataUrl.size() > 0 && data.dataUrl.size() <= 900000 &&
+      data.sizeBytes is number && data.sizeBytes > 0 && data.sizeBytes <= 900000 &&
+      data.category in ['cms', 'course', 'gallery', 'artisan', 'receipt'] &&
+      data.isPublic is bool &&
+      data.uploadedByUid is string && data.uploadedByUid == request.auth.uid &&
+      data.createdAt == request.time;
+    }
+
+    function isValidCourse(data) {
+      return data.keys().hasAll([
+        'title', 'category', 'level', 'duration', 'price', 'maxSeats', 'enrolledCount',
+        'scheduleText', 'location', 'summary', 'description', 'materialsIncluded',
+        'imageUrl', 'imageVisible', 'artisanId', 'artisanName', 'isVisible', 'order', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'title', 'category', 'level', 'duration', 'startTime', 'endTime', 'totalSessions',
+        'sessionDates', 'courseStatus', 'instructorPayPerSession', 'price', 'maxSeats', 'enrolledCount',
+        'scheduleText', 'location', 'summary', 'description', 'materialsIncluded',
+        'imageUrl', 'imageVisible', 'artisanId', 'artisanName', 'isVisible', 'order', 'fieldVisibility', 'createdAt', 'updatedAt'
+      ]) &&
+      data.title is string && data.title.size() > 0 && data.title.size() <= 120 &&
+      data.category is string && data.category.size() > 0 && data.category.size() <= 60 &&
+      data.level is string && data.level.size() <= 40 &&
+      data.duration is string && data.duration.size() <= 60 &&
+      (!('startTime' in data) || (data.startTime is string && data.startTime.size() <= 10)) &&
+      (!('endTime' in data) || (data.endTime is string && data.endTime.size() <= 10)) &&
+      (!('totalSessions' in data) || (data.totalSessions is number && data.totalSessions >= 1 && data.totalSessions <= 50)) &&
+      (!('sessionDates' in data) || (data.sessionDates is list && data.sessionDates.size() <= 50)) &&
+      (!('courseStatus' in data) || data.courseStatus in ['recruiting', 'ongoing', 'completed']) &&
+      (!('instructorPayPerSession' in data) || (data.instructorPayPerSession is number && data.instructorPayPerSession >= 0)) &&
+      data.price is number && data.price >= 0 &&
+      data.maxSeats is number && data.maxSeats > 0 &&
+      data.enrolledCount is number && data.enrolledCount >= 0 &&
+      data.scheduleText is string && data.scheduleText.size() <= 160 &&
+      data.location is string && data.location.size() <= 120 &&
+      data.summary is string && data.summary.size() <= 500 &&
+      data.description is string && data.description.size() <= 4000 &&
+      data.materialsIncluded is string && data.materialsIncluded.size() <= 1000 &&
+      data.imageUrl is string && data.imageUrl.size() <= 300 &&
+      data.imageVisible is bool &&
+      data.artisanId is string && data.artisanId.size() <= 128 &&
+      data.artisanName is string && data.artisanName.size() <= 80 &&
+      data.isVisible is bool &&
+      data.order is number &&
+      (!('fieldVisibility' in data) || (data.fieldVisibility is map && data.fieldVisibility.size() <= 30)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidArtisan(data) {
+      return data.keys().hasAll([
+        'name', 'specialty', 'yearsExperience', 'quote', 'bio',
+        'avatarUrl', 'imageVisible', 'isVisible', 'order', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'name', 'specialty', 'yearsExperience', 'phone', 'defaultSessionPay', 'quote', 'bio',
+        'avatarUrl', 'imageVisible', 'isVisible', 'order', 'fieldVisibility', 'createdAt', 'updatedAt'
+      ]) &&
+      data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+      data.specialty is string && data.specialty.size() <= 100 &&
+      data.yearsExperience is number && data.yearsExperience >= 0 &&
+      (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+      (!('defaultSessionPay' in data) || (data.defaultSessionPay is number && data.defaultSessionPay >= 0)) &&
+      data.quote is string && data.quote.size() <= 300 &&
+      data.bio is string && data.bio.size() <= 2000 &&
+      data.avatarUrl is string && data.avatarUrl.size() <= 300 &&
+      data.imageVisible is bool &&
+      data.isVisible is bool &&
+      data.order is number &&
+      (!('fieldVisibility' in data) || (data.fieldVisibility is map && data.fieldVisibility.size() <= 30)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidGalleryWork(data) {
+      return data.keys().hasAll([
+        'title', 'category', 'artisanName', 'year', 'story',
+        'imageUrl', 'imageVisible', 'isVisible', 'order', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'title', 'category', 'artisanName', 'year', 'story',
+        'imageUrl', 'imageVisible', 'isVisible', 'order', 'fieldVisibility', 'createdAt', 'updatedAt'
+      ]) &&
+      data.title is string && data.title.size() > 0 && data.title.size() <= 120 &&
+      data.category is string && data.category.size() <= 60 &&
+      data.artisanName is string && data.artisanName.size() <= 80 &&
+      data.year is string && data.year.size() <= 20 &&
+      data.story is string && data.story.size() <= 1000 &&
+      data.imageUrl is string && data.imageUrl.size() <= 300 &&
+      data.imageVisible is bool &&
+      data.isVisible is bool &&
+      data.order is number &&
+      (!('fieldVisibility' in data) || (data.fieldVisibility is map && data.fieldVisibility.size() <= 30)) &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll([
+        'ownerUid', 'phone', 'name', 'email', 'pinHash', 'notes', 'status', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'ownerUid', 'phone', 'name', 'email', 'pinHash', 'notes', 'status', 'createdAt', 'updatedAt'
+      ]) &&
+      data.ownerUid is string && data.ownerUid.size() > 0 && data.ownerUid.size() <= 128 &&
+      data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 && data.phone.matches('^[0-9+\\-\\s]{6,20}$') &&
+      data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+      data.email is string && data.email.size() <= 120 &&
+      data.pinHash is string && data.pinHash.size() >= 32 && data.pinHash.size() <= 128 &&
+      data.notes is string && data.notes.size() <= 500 &&
+      data.status in ['active', 'suspended'] &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidEnrollment(data) {
+      return data.keys().hasAll([
+        'enrollmentCode', 'ownerUid', 'memberId', 'memberName', 'memberPhone',
+        'courseId', 'courseTitle', 'courseCategory', 'sessionDate', 'seats',
+        'totalAmount', 'paymentMethod', 'paymentStatus', 'cardLastFour',
+        'transferLastFive', 'receiptMediaId', 'studentNote', 'adminNote', 'verifiedBy',
+        'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'enrollmentCode', 'ownerUid', 'memberId', 'memberName', 'memberPhone',
+        'courseId', 'courseTitle', 'courseCategory', 'sessionDate', 'seats',
+        'totalAmount', 'refundAmount', 'refundReason', 'refundedAt',
+        'paymentMethod', 'paymentStatus', 'cardLastFour',
+        'transferLastFive', 'receiptMediaId', 'studentNote', 'adminNote', 'verifiedBy',
+        'createdAt', 'updatedAt'
+      ]) &&
+      data.enrollmentCode is string && data.enrollmentCode.size() > 0 && data.enrollmentCode.size() <= 40 &&
+      data.ownerUid is string && data.ownerUid.size() > 0 && data.ownerUid.size() <= 128 &&
+      data.memberId is string && isValidId(data.memberId) &&
+      data.memberName is string && data.memberName.size() > 0 && data.memberName.size() <= 80 &&
+      data.memberPhone is string && data.memberPhone.size() >= 6 && data.memberPhone.size() <= 30 &&
+      data.courseId is string && isValidId(data.courseId) &&
+      data.courseTitle is string && data.courseTitle.size() > 0 && data.courseTitle.size() <= 120 &&
+      data.courseCategory is string && data.courseCategory.size() <= 60 &&
+      data.sessionDate is string && data.sessionDate.size() <= 160 &&
+      data.seats is number && data.seats >= 1 && data.seats <= 20 &&
+      data.totalAmount is number && data.totalAmount >= 0 &&
+      (!('refundAmount' in data) || (data.refundAmount is number && data.refundAmount >= 0)) &&
+      (!('refundReason' in data) || (data.refundReason is string && data.refundReason.size() <= 300)) &&
+      (!('refundedAt' in data) || (data.refundedAt is string && data.refundedAt.size() <= 40)) &&
+      data.paymentMethod in ['online_card', 'bank_transfer'] &&
+      data.paymentStatus in ['pending_payment', 'awaiting_verification', 'paid', 'needs_revision', 'cancelled', 'refunded'] &&
+      data.cardLastFour is string && data.cardLastFour.size() <= 10 &&
+      data.transferLastFive is string && data.transferLastFive.size() <= 10 &&
+      data.receiptMediaId is string && data.receiptMediaId.size() <= 128 &&
+      data.studentNote is string && data.studentNote.size() <= 500 &&
+      data.adminNote is string && data.adminNote.size() <= 500 &&
+      data.verifiedBy is string && data.verifiedBy.size() <= 80 &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll([
+        'ownerUid', 'memberId', 'enrollmentId', 'title', 'message', 'type', 'isRead', 'createdAt'
+      ]) && data.keys().hasOnly([
+        'ownerUid', 'memberId', 'enrollmentId', 'title', 'message', 'type', 'isRead', 'createdAt', 'readAt'
+      ]) &&
+      data.ownerUid is string && data.ownerUid.size() > 0 && data.ownerUid.size() <= 128 &&
+      data.memberId is string && data.memberId.size() <= 128 &&
+      data.enrollmentId is string && data.enrollmentId.size() <= 128 &&
+      data.title is string && data.title.size() > 0 && data.title.size() <= 120 &&
+      data.message is string && data.message.size() > 0 && data.message.size() <= 600 &&
+      data.type in ['payment_verified', 'payment_rejected', 'enrollment_created', 'system'] &&
+      data.isRead is bool &&
+      data.createdAt is timestamp;
+    }
+
+    function isValidContactSubmission(data) {
+      return data.keys().hasAll([
+        'ownerUid', 'name', 'phone', 'email', 'inquiryType', 'message', 'status', 'adminReplyNote', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'ownerUid', 'name', 'phone', 'email', 'inquiryType', 'message', 'status', 'adminReplyNote', 'createdAt', 'updatedAt'
+      ]) &&
+      data.ownerUid is string && data.ownerUid == request.auth.uid &&
+      data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+      data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 &&
+      data.email is string && data.email.size() <= 120 &&
+      data.inquiryType is string && data.inquiryType.size() <= 60 &&
+      data.message is string && data.message.size() > 0 && data.message.size() <= 2000 &&
+      data.status in ['new', 'in_progress', 'resolved'] &&
+      data.adminReplyNote is string && data.adminReplyNote.size() <= 1000 &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidAdminUser(data) {
+      return data.keys().hasAll([
+        'phone', 'name', 'roleTitle', 'boundEmail', 'pinHash', 'isSuperAdmin', 'isActive', 'permissions', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'phone', 'name', 'roleTitle', 'boundEmail', 'pinHash', 'isSuperAdmin', 'isActive', 'permissions', 'createdAt', 'updatedAt'
+      ]) &&
+      data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30 &&
+      data.name is string && data.name.size() > 0 && data.name.size() <= 80 &&
+      data.roleTitle is string && data.roleTitle.size() > 0 && data.roleTitle.size() <= 80 &&
+      data.boundEmail is string && data.boundEmail.size() <= 120 &&
+      data.pinHash is string && data.pinHash.size() >= 32 && data.pinHash.size() <= 128 &&
+      data.isSuperAdmin is bool &&
+      data.isActive is bool &&
+      data.permissions is map &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    function isValidAdminIdentity(data) {
+      return data.keys().hasAll(['uid', 'email', 'adminUserId', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'adminUserId', 'createdAt']) &&
+        data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() <= 120 &&
+        data.adminUserId is string && data.adminUserId.size() <= 128 &&
+        data.createdAt == request.time;
+    }
+
+    function isValidInstructorSession(data) {
+      return data.keys().hasAll([
+        'artisanId', 'artisanName', 'courseId', 'courseTitle', 'sessionDate', 'monthKey',
+        'startTime', 'endTime', 'durationText', 'attendanceStatus', 'substituteName',
+        'payAmount', 'payStatus', 'note', 'createdAt', 'updatedAt'
+      ]) && data.keys().hasOnly([
+        'artisanId', 'artisanName', 'courseId', 'courseTitle', 'sessionDate', 'monthKey',
+        'startTime', 'endTime', 'durationText', 'attendanceStatus', 'substituteName',
+        'payAmount', 'payStatus', 'note', 'createdAt', 'updatedAt'
+      ]) &&
+      data.artisanId is string && data.artisanId.size() <= 128 &&
+      data.artisanName is string && data.artisanName.size() > 0 && data.artisanName.size() <= 80 &&
+      data.courseId is string && data.courseId.size() <= 128 &&
+      data.courseTitle is string && data.courseTitle.size() > 0 && data.courseTitle.size() <= 120 &&
+      data.sessionDate is string && data.sessionDate.size() >= 8 && data.sessionDate.size() <= 20 &&
+      data.monthKey is string && data.monthKey.size() == 7 &&
+      data.startTime is string && data.startTime.size() <= 10 &&
+      data.endTime is string && data.endTime.size() <= 10 &&
+      data.durationText is string && data.durationText.size() <= 60 &&
+      data.attendanceStatus in ['present', 'leave', 'substitute', 'cancelled'] &&
+      data.substituteName is string && data.substituteName.size() <= 80 &&
+      data.payAmount is number && data.payAmount >= 0 &&
+      data.payStatus in ['unpaid', 'paid'] &&
+      data.note is string && data.note.size() <= 500 &&
+      data.createdAt is timestamp &&
+      data.updatedAt == request.time;
+    }
+
+    // Startup connection check document
+    match /test/connection {
+      allow get: if true;
+      allow list, create, update, delete: if false;
+    }
+
+    // Published storefront CMS configuration
+    match /site_content/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if true;
+      allow create: if isValidId(docId) && isAdmin() && isValidSiteContent(incoming());
+      allow update: if isValidId(docId) && isAdmin() && isValidSiteContent(incoming());
+      allow delete: if isValidId(docId) && isAdmin();
+    }
+
+    // Historical CMS snapshots for recall & re-edit
+    match /cms_revisions/{revisionId} {
+      allow get: if isValidId(revisionId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(revisionId) && isAdmin() && isValidCmsRevision(incoming());
+      allow update: if isValidId(revisionId) && isAdmin() && isValidCmsRevision(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(revisionId) && isAdmin();
+    }
+
+    // Uploaded images stored directly in Firestore
+    match /media_assets/{assetId} {
+      allow get: if isValidId(assetId) && (existing().isPublic == true || isAdmin() || (isVerifiedUser() && existing().uploadedByUid == request.auth.uid));
+      allow list: if isAdmin() || resource.data.isPublic == true || (isVerifiedUser() && resource.data.uploadedByUid == request.auth.uid);
+      allow create: if isValidId(assetId) && isVerifiedUser() && isValidMediaAsset(incoming()) && (isAdmin() || (incoming().isPublic == false && incoming().category == 'receipt'));
+      allow update: if isValidId(assetId) && isAdmin() && isValidMediaAsset(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(assetId) && isAdmin();
+    }
+
+    // Workshop courses catalog
+    match /courses/{courseId} {
+      allow get: if isValidId(courseId);
+      allow list: if true;
+      allow create: if isValidId(courseId) && isAdmin() && isValidCourse(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(courseId) && isAdmin() && isValidCourse(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(courseId) && isAdmin();
+    }
+
+    // Workshop artisans
+    match /artisans/{artisanId} {
+      allow get: if isValidId(artisanId);
+      allow list: if true;
+      allow create: if isValidId(artisanId) && isAdmin() && isValidArtisan(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(artisanId) && isAdmin() && isValidArtisan(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(artisanId) && isAdmin();
+    }
+
+    // Gallery artworks
+    match /gallery_works/{workId} {
+      allow get: if isValidId(workId);
+      allow list: if true;
+      allow create: if isValidId(workId) && isAdmin() && isValidGalleryWork(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(workId) && isAdmin() && isValidGalleryWork(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(workId) && isAdmin();
+    }
+
+    // Student members (PII protected)
+    match /members/{memberId} {
+      allow get: if isValidId(memberId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(memberId) && isVerifiedUser() && isValidMember(incoming()) && incoming().createdAt == request.time && (isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().status == 'active'));
+      allow update: if isValidId(memberId) && isVerifiedUser() && isValidMember(incoming()) && incoming().createdAt == existing().createdAt && (
+        isAdmin() || (
+          existing().ownerUid == request.auth.uid &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().status == existing().status &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'phone', 'pinHash', 'notes', 'updatedAt'])
+        )
+      );
+      allow delete: if isValidId(memberId) && isAdmin();
+    }
+
+    // Course enrollments and payment verification
+    match /enrollments/{enrollmentId} {
+      allow get: if isValidId(enrollmentId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(enrollmentId) && isVerifiedUser() && isValidEnrollment(incoming()) && incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/courses/$(incoming().courseId)) &&
+        exists(/databases/$(database)/documents/members/$(incoming().memberId)) && (
+          isAdmin() || (
+            incoming().ownerUid == request.auth.uid &&
+            incoming().adminNote == '' &&
+            incoming().verifiedBy == '' &&
+            (
+              (incoming().paymentMethod == 'online_card' && incoming().paymentStatus in ['paid', 'awaiting_verification'] && incoming().cardLastFour.size() == 4) ||
+              (incoming().paymentMethod == 'bank_transfer' && incoming().paymentStatus in ['pending_payment', 'awaiting_verification'])
+            )
+          )
+        );
+      allow update: if isValidId(enrollmentId) && isVerifiedUser() && isValidEnrollment(incoming()) && incoming().createdAt == existing().createdAt && (
+        isAdmin() || (
+          existing().ownerUid == request.auth.uid &&
+          existing().paymentStatus != 'cancelled' &&
+          existing().paymentStatus != 'paid' &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().memberId == existing().memberId &&
+          incoming().courseId == existing().courseId &&
+          incoming().totalAmount == existing().totalAmount &&
+          incoming().paymentMethod == existing().paymentMethod &&
+          incoming().paymentStatus in ['pending_payment', 'awaiting_verification'] &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['transferLastFive', 'receiptMediaId', 'paymentStatus', 'studentNote', 'updatedAt'])
+        )
+      );
+      allow delete: if isValidId(enrollmentId) && isAdmin();
+    }
+
+    // Member notifications
+    match /notifications/{notificationId} {
+      allow get: if isValidId(notificationId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(notificationId) && isVerifiedUser() && isValidNotification(incoming()) && incoming().createdAt == request.time && (
+        isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().type == 'enrollment_created' && incoming().isRead == false)
+      );
+      allow update: if isValidId(notificationId) && isVerifiedUser() && isValidNotification(incoming()) && incoming().createdAt == existing().createdAt && (
+        isAdmin() || (
+          existing().ownerUid == request.auth.uid &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().readAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['isRead', 'readAt'])
+        )
+      );
+      allow delete: if isValidId(notificationId) && isAdmin();
+    }
+
+    // Visitor contact and booking inquiries
+    match /contact_submissions/{submissionId} {
+      allow get: if isValidId(submissionId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(submissionId) && isVerifiedUser() && isValidContactSubmission(incoming()) && incoming().createdAt == request.time && incoming().status == 'new' && incoming().adminReplyNote == '';
+      allow update: if isValidId(submissionId) && isAdmin() && isValidContactSubmission(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(submissionId) && isAdmin();
+    }
+
+    // Admin users & RBAC permission matrix
+    match /admin_users/{adminId} {
+      allow get: if isValidId(adminId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(adminId) && isAdmin() && isValidAdminUser(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(adminId) && isAdmin() && isValidAdminUser(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(adminId) && isAdmin();
+    }
+
+    // Admin Firebase UID identities
+    match /admin_identities/{uid} {
+      allow get: if isValidId(uid) && (isAdmin() || (isVerifiedUser() && uid == request.auth.uid));
+      allow list: if isAdmin();
+      allow create, update: if isValidId(uid) && isAdmin() && isValidAdminIdentity(incoming());
+      allow delete: if isValidId(uid) && isSuperAdminEmail();
+    }
+
+    // Instructor teaching logs, leave, payroll & monthly class accounting records
+    match /instructor_sessions/{recordId} {
+      allow get: if isValidId(recordId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(recordId) && isAdmin() && isValidInstructorSession(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(recordId) && isAdmin() && isValidInstructorSession(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(recordId) && isAdmin();
+    }
+  }
+}

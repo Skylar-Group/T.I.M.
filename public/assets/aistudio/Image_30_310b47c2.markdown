@@ -1,0 +1,230 @@
+---
+name: Japandi Warm Terracotta Atelier
+colors:
+  surface: '#fcf9f8'
+  surface-dim: '#dcd9d8'
+  surface-bright: '#fcf9f8'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#f6f3f2'
+  surface-container: '#f0edec'
+  surface-container-high: '#eae7e7'
+  surface-container-highest: '#e4e2e1'
+  on-surface: '#1b1c1b'
+  on-surface-variant: '#51443d'
+  inverse-surface: '#303030'
+  inverse-on-surface: '#f3f0ef'
+  outline: '#83746c'
+  outline-variant: '#d5c3ba'
+  surface-tint: '#80543a'
+  primary: '#70472d'
+  on-primary: '#ffffff'
+  primary-container: '#8c5e43'
+  on-primary-container: '#ffe4d6'
+  inverse-primary: '#f4ba99'
+  secondary: '#73594c'
+  on-secondary: '#ffffff'
+  secondary-container: '#ffdbca'
+  on-secondary-container: '#795f51'
+  tertiary: '#794322'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#955a38'
+  on-tertiary-container: '#ffe3d7'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#ffdbc9'
+  primary-fixed-dim: '#f4ba99'
+  on-primary-fixed: '#311301'
+  on-primary-fixed-variant: '#653d24'
+  secondary-fixed: '#ffdbca'
+  secondary-fixed-dim: '#e1c0af'
+  on-secondary-fixed: '#29170d'
+  on-secondary-fixed-variant: '#594235'
+  tertiary-fixed: '#ffdbca'
+  tertiary-fixed-dim: '#ffb68f'
+  on-tertiary-fixed: '#331200'
+  on-tertiary-fixed-variant: '#6d391a'
+  background: '#fcf9f8'
+  on-background: '#1b1c1b'
+  surface-variant: '#e4e2e1'
+  terracotta-wood: '#8c5e43'
+  warm-chestnut: '#73594c'
+  washi-clay: '#e8ded8'
+  amber-terracotta: '#b0704c'
+  warm-border: '#e0d8d3'
+  cream-surface: '#fcf9f8'
+  charcoal-ink: '#1b1c1c'
+typography:
+  display:
+    fontFamily: Noto Serif
+    fontSize: 48px
+    fontWeight: '400'
+    lineHeight: 64px
+    letterSpacing: 0.04em
+  display-mobile:
+    fontFamily: Noto Serif
+    fontSize: 32px
+    fontWeight: '400'
+    lineHeight: 44px
+    letterSpacing: 0.02em
+  headline-lg:
+    fontFamily: Noto Serif
+    fontSize: 36px
+    fontWeight: '400'
+    lineHeight: 50px
+    letterSpacing: 0.02em
+  headline-lg-mobile:
+    fontFamily: Noto Serif
+    fontSize: 26px
+    fontWeight: '400'
+    lineHeight: 38px
+    letterSpacing: 0.01em
+  headline-md:
+    fontFamily: Noto Serif
+    fontSize: 24px
+    fontWeight: '400'
+    lineHeight: 36px
+    letterSpacing: 0.02em
+  headline-sm:
+    fontFamily: Noto Serif
+    fontSize: 20px
+    fontWeight: '500'
+    lineHeight: 30px
+    letterSpacing: 0.01em
+  body-lg:
+    fontFamily: Noto Sans
+    fontSize: 18px
+    fontWeight: '400'
+    lineHeight: 30px
+    letterSpacing: 0.01em
+  body-md:
+    fontFamily: Noto Sans
+    fontSize: 15px
+    fontWeight: '400'
+    lineHeight: 26px
+    letterSpacing: 0.01em
+  body-sm:
+    fontFamily: Noto Sans
+    fontSize: 13px
+    fontWeight: '400'
+    lineHeight: 20px
+    letterSpacing: 0.01em
+  label-lg:
+    fontFamily: Noto Sans
+    fontSize: 14px
+    fontWeight: '500'
+    lineHeight: 20px
+    letterSpacing: 0.06em
+  label-md:
+    fontFamily: Noto Sans
+    fontSize: 12px
+    fontWeight: '500'
+    lineHeight: 18px
+    letterSpacing: 0.08em
+  label-sm:
+    fontFamily: Noto Sans
+    fontSize: 11px
+    fontWeight: '500'
+    lineHeight: 16px
+    letterSpacing: 0.08em
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  gutter: 1.5rem
+  gutter-mobile: 1rem
+  margin: 3rem
+  margin-mobile: 1.25rem
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 1rem
+  space-lg: 1.75rem
+  space-xl: 3rem
+---
+
+## Brand & Style
+
+This design system synthesizes traditional Japanese spatial aesthetics—rooted in *Ma* (間, negative space and quiet cadence)—with the functional warmth of Scandinavian craft minimalism (Japandi). Designed for fine craft ateliers, ceramic studios, joinery courses, and mindful lifestyle workshops, the interface embodies quiet contemplation, organic authenticity, and unhurried tactile warmth.
+
+### Core Tenets
+- **Ma (間) & Unhurried Air:** Generous margins, deliberate breathing room, and soft visual cadence treat each workshop course, artisan tool, and schedule entry like a curated piece in a sunlit gallery.
+- **Pure Warm Terracotta & Timber Harmony:** All visual energy is anchored in warm earthen terracotta wood, rich chestnut, soft washi paper, and fired clay. All cold, olive, sage, or mossy undertones are eliminated in favor of a cohesive, sun-baked earth spectrum.
+- **Craft Tactility:** Interfaces feel hand-pressed and physical, prioritizing warm paper layers, subtle hairline bounds, and natural typographic balance over cold technical chrome.
+
+## Colors
+
+The chromatic direction adheres strictly to a 100% warm, earth-and-wood palette inspired by Japanese ceramic workshops, timber ateliers, and sun-dried washi paper. Any presence of green, sage, or olive tones has been eliminated.
+
+### Key Roles
+- **Primary (`#8c5e43` - Warm Terracotta / Tea Wood):** The principal brand color. Powers primary calls-to-action, active timeline milestones, selected capsule states, and prominent craft badges.
+- **Secondary (`#73594c` - Warm Chestnut / Kuriiro):** Provides grounded structure for metadata headers, secondary actions, supporting category indicators, and structural UI elements.
+- **Tertiary (`#b0704c` - Warm Amber Terracotta):** Replaces all green and cool accents. Utilized exclusively for active highlights, workshop progress bars, availability indicators ("Few Spots Left", "Confirmed"), and subtle visual accents.
+- **Container / Accent Fill (`#e8ded8` - Warm Sand / Washi Clay):** Used for soft secondary pill buttons, active row backgrounds, container backdrops, and subtle callout boxes.
+- **Canvas & Surface Tiering:**
+  - Base Canvas (`#fcf9f8` - Cream White): An artisanal, unbleached washi surface that establishes warm stillness throughout the viewport.
+  - Neutral Borders (`#e0d8d3`): Replaces cold gray outlines with a soft, warm stoneware boundary.
+  - Floating Card Surfaces (`#ffffff`): Crisp warm white dedicated to interactive workshop cards and modal overlays.
+- **Text & Hierarchy:**
+  - Charcoal Ink (`#1b1c1c`): Deep mineral ink for primary reading and display text.
+  - Muted Bark (`#51443d`): Subtle secondary text for workshop prerequisites, artisan bios, and dates.
+
+## Typography
+
+The typographic system creates an interplay between literary serenity and functional clarity.
+
+- **Headlines & Editorial Voice:** Set in `Noto Serif`. Spacious line heights and delicate positive tracking lend workshop titles, artisan introductions, and philosophical maxims a bookish, patient demeanor.
+- **Body & Informational Tone:** Set in `Noto Sans`. Designed for seamless legibility across curriculum itineraries, tool requirements, and workshop locations.
+- **Labels & Micro-copy:** Micro-copy on pill chips, filter capsules, session indicators, and pricing metadata utilizes `Noto Sans` with expanded tracking (`0.06em` to `0.08em`) to guarantee quick recognition while retaining an airy graphic cadence.
+
+## Layout & Spacing
+
+The layout is anchored in a 12-column fluid grid system (maximum width 1280px) on desktop, adjusting to a 6-column system on tablet and a 4-column structure on mobile devices.
+
+- **The Geometry of Ma:** Generous vertical rhythm separates narrative sections with `space-xl` (3rem) intervals. Visual components are never compressed; margins remain open and calm.
+- **Grid Adaptability:** Desktop screens feature substantial `3rem` canvas margins that cradle the atelier content. Mobile viewports compress outer padding to `1.25rem` to optimize usable area while keeping gutters comfortable at `1rem`.
+- **Card and Imagery Proportion:** Course modules, artisan portraits, and gallery photographs must observe clean 16:9, 4:3, or 1:1 ratios, ensuring that photography remains architecturally grounded.
+
+## Elevation & Depth
+
+Spatial depth avoids synthetic charcoal drop shadows, instead using warm, paper-inspired tonal stacking paired with diffused amber-tinted ambient light.
+
+- **Ambient Warm Shadow:** Elevated cards and dropdown panels use an ambient drop tinted with warm terracotta: `0 8px 30px rgba(140, 94, 67, 0.07)`. When hovered, cards elevate subtly with `0 14px 38px rgba(140, 94, 67, 0.12)`.
+- **Tonal Layers:** Elevation begins at the base canvas level (`#fcf9f8`), transitions to grouped containers (`#e8ded8`), and rises to foreground card components (`#ffffff`).
+- **Warm Hairline Borders:** Panels, table separators, and card perimeters use a 1px solid stroke of `#e0d8d3` (Warm Neutral Border) or a delicate alpha stroke of `rgba(140, 94, 67, 0.12)`, creating structural integrity without cold contrast.
+
+## Shapes
+
+The design uses a balanced roundedness model (Level 2: `0.5rem` / 8px default):
+
+- **Structural Containers:** Cards, dialogs, media framing, and form inputs utilize `0.5rem` (8px) corners, delivering the gentle, organic hand-carved feel of rounded woodcraft without clinical rigidity.
+- **Interactive Capsules:** Filter tags, category indicators, badge notifications, and status chips apply a full pill radius (`9999px`) for organic ergonomics that invite touch.
+- **Progress Trackers:** Linear indicators and step tracks utilize softened terminal caps to reinforce hand-crafted fluidity.
+
+## Components
+
+### Buttons
+- **Primary Action:** Solid Warm Terracotta (`#8c5e43`) with clean white text, 8px radius, 48px height, and `label-lg` typography. Transitions on hover to `#73594c` (Warm Chestnut).
+- **Secondary Action:** Warm Sand container (`#e8ded8`) with Warm Chestnut text (`#73594c`) and an 8px radius. Transitions to `#e0d8d3` on hover.
+- **Ghost / Outline Action:** Transparent background framed with a 1px border in Warm Border (`#e0d8d3`) and text in `#8c5e43`. Transitions to an overlay of `rgba(140, 94, 67, 0.06)` on hover.
+
+### Chips & Filter Tags
+- **Structure:** Pill shape (`9999px`), height 32px or 36px, internal padding `0.5rem 1rem`.
+- **Unselected:** Cream surface (`#ffffff`) with a 1px border in `#e0d8d3` and text in `#73594c`.
+- **Selected:** Solid Warm Terracotta (`#8c5e43`) with crisp white text. No green or cool tones may be introduced.
+
+### Status Indicators & Progress Trackers
+- **Progress Bars:** Base track in Warm Sand (`#e8ded8`), fill bar in warm amber terracotta (`#b0704c`).
+- **Availability / Status Badges:** Soft warm pill background (`#e8ded8`) with text and dot glyphs rendered in warm amber terracotta (`#b0704c`). All previous sage, olive, or green status accents are strictly substituted with this warm amber hue.
+- **Timeline Nodes:** 8px solid circular nodes in `#8c5e43` linked by a 1.5px warm border track (`#e0d8d3`).
+
+### Cards
+- **Workshop Cards:** Built on a `#ffffff` surface, framed with a 1px border in `#e0d8d3`, and shaded with `0 8px 30px rgba(140, 94, 67, 0.07)`. Features a 16:9 craft image header, terracotta category chip, `headline-md` title, and an unhurried metadata row at the base.
+
+### Form Inputs & Selection Controls
+- **Text Inputs:** Crisp warm white field (`#ffffff`), 8px border radius, 48px height, 1px border in `#e0d8d3`. Focus state switches the border to `#8c5e43` accompanied by a warm ambient halo of `0 0 0 3px rgba(140, 94, 67, 0.15)`.
+- **Checkboxes & Radios:** 18px controls with a 1px border in `#73594c`. In the checked state, the fill transitions to solid `#8c5e43` displaying a white checkmark or inner dot.

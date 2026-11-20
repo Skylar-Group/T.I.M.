@@ -1,0 +1,6 @@
+{
+  "name": "間・陶木工坊 Ma Craft Atelier",
+  "description": "結合日式靜謐與北歐工藝美學的綜合工藝體驗工坊全端網站、會員報名繳費系統與企業級 CMS 後台管理平台。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
