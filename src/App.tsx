@@ -36,9 +36,47 @@ import { EnrollmentModal } from './components/EnrollmentModal';
 import { MemberCenter } from './components/MemberCenter';
 import { AdminConsole } from './components/AdminConsole';
 
+const SITE_CONTENT_CACHE_KEY = 'atelier_cached_site_content_v1';
+
+function readCachedSiteContent(): SiteContent | null {
+  try {
+    const raw = window.localStorage.getItem(SITE_CONTENT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SiteContent>;
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.brandName !== 'string') {
+      return null;
+    }
+    return {
+      ...DEFAULT_SITE_CONTENT,
+      ...parsed,
+      hero: {
+        ...DEFAULT_SITE_CONTENT.hero,
+        ...(parsed.hero || {}),
+      },
+      footer: {
+        ...DEFAULT_SITE_CONTENT.footer,
+        ...(parsed.footer || {}),
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedSiteContent(content: SiteContent): void {
+  try {
+    window.localStorage.setItem(SITE_CONTENT_CACHE_KEY, JSON.stringify(content));
+  } catch {
+    // Ignore storage quota or private-browsing errors
+  }
+}
+
 function AtelierApp() {
+  const [initialCachedContent] = useState<SiteContent | null>(() => readCachedSiteContent());
   const [currentPage, setCurrentPage] = useState<PublicPageKey | 'course-detail' | 'admin'>('home');
-  const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
+  const [siteContent, setSiteContent] = useState<SiteContent>(
+    initialCachedContent || DEFAULT_SITE_CONTENT
+  );
   const [courses, setCourses] = useState<Course[]>(
     DEFAULT_COURSES.map((c, idx) => ({ ...c, id: `seed-course-${idx + 1}` }))
   );
@@ -54,7 +92,7 @@ function AtelierApp() {
   const [activeMember, setActiveMember] = useState<Member | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [firebaseReady, setFirebaseReady] = useState(false);
-  const [contentHydrated, setContentHydrated] = useState(false);
+  const [contentHydrated, setContentHydrated] = useState(Boolean(initialCachedContent));
 
   const loadPublicData = useCallback(async () => {
     try {
@@ -65,12 +103,14 @@ function AtelierApp() {
         fetchGalleryWorks(),
       ]);
       setSiteContent(content);
-      setContentHydrated(true);
+      writeCachedSiteContent(content);
       if (crs.length > 0) setCourses(crs);
       if (arts.length > 0) setArtisans(arts);
       if (gal.length > 0) setGalleryWorks(gal);
     } catch (err) {
       console.warn('Using default storefront content until Firestore is seeded:', err);
+    } finally {
+      setContentHydrated(true);
     }
   }, []);
 
@@ -109,6 +149,7 @@ function AtelierApp() {
         siteContent={siteContent}
         onSiteContentChange={(updated) => {
           setSiteContent(updated);
+          writeCachedSiteContent(updated);
           setContentHydrated(true);
         }}
         onCatalogRefresh={loadPublicData}
@@ -121,6 +162,7 @@ function AtelierApp() {
     <div className="min-h-screen flex flex-col bg-[#fcf9f8] text-[#1b1c1c]">
       <Navbar
         siteContent={siteContent}
+        isBrandHydrated={contentHydrated}
         currentPage={currentPage}
         onNavigate={handleNavigate}
         unreadNotifications={unreadNotifications}
@@ -165,20 +207,21 @@ function AtelierApp() {
         <footer className="bg-[#f6f3f2] border-t border-[#e0d8d3] mt-12">
           <div className="max-w-[1280px] mx-auto px-5 md:px-12 py-12 flex flex-col md:flex-row justify-between gap-8">
             <div className="space-y-2 max-w-md">
-              {(siteContent.brandVisible || (siteContent.brandLogoVisible && siteContent.brandLogoUrl)) && (
-                <div className="flex items-center gap-2.5">
-                  {siteContent.brandLogoVisible && siteContent.brandLogoUrl && (
-                    <MediaImage
-                      src={siteContent.brandLogoUrl}
-                      alt={siteContent.brandName || '品牌標誌'}
-                      className="h-12 w-auto max-w-[140px] object-contain shrink-0"
-                    />
-                  )}
-                  {siteContent.brandVisible && (
-                    <p className="text-lg font-serif text-[#1b1c1c]">{siteContent.brandName}</p>
-                  )}
-                </div>
-              )}
+              {contentHydrated &&
+                (siteContent.brandVisible || (siteContent.brandLogoVisible && siteContent.brandLogoUrl)) && (
+                  <div className="flex items-center gap-2.5">
+                    {siteContent.brandLogoVisible && siteContent.brandLogoUrl && (
+                      <MediaImage
+                        src={siteContent.brandLogoUrl}
+                        alt={siteContent.brandName || '品牌標誌'}
+                        className="h-12 w-auto max-w-[140px] object-contain shrink-0"
+                      />
+                    )}
+                    {siteContent.brandVisible && (
+                      <p className="text-lg font-serif text-[#1b1c1c]">{siteContent.brandName}</p>
+                    )}
+                  </div>
+                )}
               {isFieldVisible(siteContent.footer.fieldVisibility, 'tagline') &&
                 siteContent.footer.tagline && (
                   <p className="text-sm text-[#51443d]">{siteContent.footer.tagline}</p>

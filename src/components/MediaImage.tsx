@@ -2,6 +2,33 @@ import React, { useEffect, useState } from 'react';
 import { fetchMediaAssetById } from '../services/firestoreService';
 
 const memoryMediaCache = new Map<string, string>();
+const MEDIA_STORAGE_PREFIX = 'atelier_media_cache_v1_';
+
+function getCachedMedia(id: string): string {
+  const inMem = memoryMediaCache.get(id);
+  if (inMem) return inMem;
+  try {
+    const stored = window.localStorage.getItem(`${MEDIA_STORAGE_PREFIX}${id}`);
+    if (stored) {
+      memoryMediaCache.set(id, stored);
+      return stored;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return '';
+}
+
+function setCachedMedia(id: string, dataUrl: string): void {
+  memoryMediaCache.set(id, dataUrl);
+  if (dataUrl.length <= 220000) {
+    try {
+      window.localStorage.setItem(`${MEDIA_STORAGE_PREFIX}${id}`, dataUrl);
+    } catch {
+      // ignore quota errors
+    }
+  }
+}
 
 interface MediaImageProps {
   src?: string;
@@ -20,7 +47,7 @@ export const MediaImage: React.FC<MediaImageProps> = ({
     if (!src) return '';
     if (src.startsWith('media://')) {
       const id = src.replace('media://', '');
-      return memoryMediaCache.get(id) || '';
+      return getCachedMedia(id);
     }
     return src;
   });
@@ -35,7 +62,7 @@ export const MediaImage: React.FC<MediaImageProps> = ({
     }
     if (src.startsWith('media://')) {
       const id = src.replace('media://', '');
-      const cached = memoryMediaCache.get(id);
+      const cached = getCachedMedia(id);
       if (cached) {
         setResolvedSrc(cached);
         return;
@@ -44,7 +71,7 @@ export const MediaImage: React.FC<MediaImageProps> = ({
         .then((asset) => {
           if (!active) return;
           if (asset?.dataUrl) {
-            memoryMediaCache.set(id, asset.dataUrl);
+            setCachedMedia(id, asset.dataUrl);
             setResolvedSrc(asset.dataUrl);
           } else {
             setFailed(true);

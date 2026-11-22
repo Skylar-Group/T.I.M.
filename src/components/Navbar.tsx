@@ -5,6 +5,7 @@ import { MediaImage } from './MediaImage';
 
 interface NavbarProps {
   siteContent: SiteContent;
+  isBrandHydrated?: boolean;
   currentPage: PublicPageKey | 'admin' | 'course-detail';
   onNavigate: (page: PublicPageKey | 'admin') => void;
   unreadNotifications: number;
@@ -13,6 +14,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   siteContent,
+  isBrandHydrated = true,
   currentPage,
   onNavigate,
   unreadNotifications,
@@ -38,7 +40,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header className="sticky top-0 z-40 bg-[#fcf9f8]/95 backdrop-blur-sm border-b border-[#e0d8d3]">
       <div className="max-w-[1360px] mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-4">
         {/* Zone 1: Brand Logo + Wordmark */}
-        {showBrandLockup ? (
+        {!isBrandHydrated ? (
+          <div className="flex items-center gap-2.5 min-w-0 md:shrink-0" aria-hidden="true">
+            <div className="h-9 w-9 rounded-lg bg-[#e8ded8]/60 animate-pulse shrink-0" />
+            <div className="h-5 w-32 rounded bg-[#e8ded8]/60 animate-pulse" />
+          </div>
+        ) : showBrandLockup ? (
           <button
             type="button"
             onClick={() => {
