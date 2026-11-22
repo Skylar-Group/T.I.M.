@@ -528,7 +528,10 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
     artisansSection: content.artisansSection,
     contactSection: content.contactSection,
     paymentConfig: content.paymentConfig,
-    footer: content.footer,
+    footer: {
+      ...content.footer,
+      browserTabTitle: String(content.footer?.browserTabTitle || '').trim().slice(0, 100),
+    },
     customBlocks: content.customBlocks,
     updatedBy,
   };

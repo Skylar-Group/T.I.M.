@@ -376,7 +376,7 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
               </div>
             </div>
 
-            <div className="max-w-md">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TextFieldWithVisibility
                 label="工坊品牌名稱"
                 value={draft.brandName}
@@ -384,6 +384,27 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                 visible={draft.brandVisible}
                 onToggleVisible={(val) => setDraft({ ...draft, brandVisible: val })}
               />
+              <label className="block space-y-1.5">
+                <span className="block text-xs font-medium text-[#51443d]">
+                  瀏覽器分頁顯示名稱（Tab 標題，留空則自動套用工坊品牌名稱）
+                </span>
+                <input
+                  type="text"
+                  maxLength={100}
+                  value={draft.footer.browserTabTitle || ''}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      footer: { ...draft.footer, browserTabTitle: e.target.value },
+                    })
+                  }
+                  placeholder={draft.brandName || '例如：存心‧傳意 Timeless Inheritance Mission'}
+                  className="w-full h-11 px-3.5 rounded-lg bg-white border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43]"
+                />
+                <span className="block text-[11px] text-[#73594c]">
+                  發佈後會即時更新瀏覽器上方分頁顯示的網站名稱
+                </span>
+              </label>
             </div>
 
             <div className="space-y-3">

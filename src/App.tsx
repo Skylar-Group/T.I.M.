@@ -54,6 +54,7 @@ function AtelierApp() {
   const [activeMember, setActiveMember] = useState<Member | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [firebaseReady, setFirebaseReady] = useState(false);
+  const [contentHydrated, setContentHydrated] = useState(false);
 
   const loadPublicData = useCallback(async () => {
     try {
@@ -64,6 +65,7 @@ function AtelierApp() {
         fetchGalleryWorks(),
       ]);
       setSiteContent(content);
+      setContentHydrated(true);
       if (crs.length > 0) setCourses(crs);
       if (arts.length > 0) setArtisans(arts);
       if (gal.length > 0) setGalleryWorks(gal);
@@ -84,6 +86,18 @@ function AtelierApp() {
     return () => unsub();
   }, [loadPublicData]);
 
+  useEffect(() => {
+    if (!contentHydrated) return;
+    const customTitle = siteContent.footer?.browserTabTitle?.trim();
+    const resolvedTitle = customTitle || siteContent.brandName?.trim();
+    if (!resolvedTitle) return;
+    document.title = resolvedTitle;
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) {
+      ogTitle.setAttribute('content', resolvedTitle);
+    }
+  }, [contentHydrated, siteContent.brandName, siteContent.footer?.browserTabTitle]);
+
   const handleNavigate = (page: PublicPageKey | 'admin') => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -93,7 +107,10 @@ function AtelierApp() {
     return (
       <AdminConsole
         siteContent={siteContent}
-        onSiteContentChange={(updated) => setSiteContent(updated)}
+        onSiteContentChange={(updated) => {
+          setSiteContent(updated);
+          setContentHydrated(true);
+        }}
         onCatalogRefresh={loadPublicData}
         onExitToStorefront={() => handleNavigate('home')}
       />

@@ -122,6 +122,7 @@ export interface SiteContent {
     tagline: string;
     copyrightText: string;
     addressLine: string;
+    browserTabTitle?: string;
     fieldVisibility?: FieldVisibilityMap;
   };
   customBlocks: CustomBlock[];
