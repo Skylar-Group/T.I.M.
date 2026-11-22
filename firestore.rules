@@ -33,10 +33,20 @@ service cloud.firestore {
       return isVerifiedUser() && request.auth.token.email == 'timelessinheritancemission@gmail.com';
     }
 
+    function isAdminEmailRegistered() {
+      return isVerifiedUser() &&
+        request.auth.token.email != null &&
+        exists(/databases/$(database)/documents/admin_emails/$(request.auth.token.email.lower().replace('[^a-z0-9]', '_'))) &&
+        get(/databases/$(database)/documents/admin_emails/$(request.auth.token.email.lower().replace('[^a-z0-9]', '_'))).data.email == request.auth.token.email.lower() &&
+        get(/databases/$(database)/documents/admin_emails/$(request.auth.token.email.lower().replace('[^a-z0-9]', '_'))).data.isActive == true;
+    }
+
     function isAdmin() {
       return isSuperAdminEmail() || (
-        isVerifiedUser() &&
-        exists(/databases/$(database)/documents/admin_identities/$(request.auth.uid))
+        isVerifiedUser() && (
+          exists(/databases/$(database)/documents/admin_identities/$(request.auth.uid)) ||
+          isAdminEmailRegistered()
+        )
       );
     }
 
@@ -305,6 +315,16 @@ service cloud.firestore {
         data.createdAt == request.time;
     }
 
+    function isValidAdminEmail(data) {
+      return data.keys().hasAll(['email', 'adminUserId', 'isActive', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['email', 'adminUserId', 'isActive', 'createdAt', 'updatedAt']) &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
+        data.adminUserId is string && data.adminUserId.size() <= 128 &&
+        data.isActive is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt == request.time;
+    }
+
     function isValidInstructorSession(data) {
       return data.keys().hasAll([
         'artisanId', 'artisanName', 'courseId', 'courseTitle', 'sessionDate', 'monthKey',
@@ -485,6 +505,15 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow create, update: if isValidId(uid) && isAdmin() && isValidAdminIdentity(incoming());
       allow delete: if isValidId(uid) && isSuperAdminEmail();
+    }
+
+    // Admin bound-email registry
+    match /admin_emails/{emailKey} {
+      allow get: if isValidId(emailKey) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(emailKey) && isAdmin() && isValidAdminEmail(incoming()) && incoming().createdAt == request.time;
+      allow update: if isValidId(emailKey) && isAdmin() && isValidAdminEmail(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(emailKey) && isAdmin();
     }
 
     // Instructor teaching logs, leave, payroll & monthly class accounting records

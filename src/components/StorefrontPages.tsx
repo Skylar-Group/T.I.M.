@@ -23,6 +23,7 @@ import {
   SiteContent,
 } from '../types/atelier';
 import { calculateTimeRangeDisplay, formatDateWithWeekday } from '../utils/scheduleUtils';
+import { HeroSlider } from './HeroSlider';
 import { MediaImage } from './MediaImage';
 import { OptionOrCustomField } from './FormControls';
 
@@ -487,13 +488,13 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               </div>
 
               {siteContent.hero.imageVisible && (
-                <div className="lg:col-span-6 rounded-lg overflow-hidden border border-[#e0d8d3] shadow-warm bg-[#fcf9f8] flex items-center justify-center self-center">
-                  <MediaImage
-                    src={siteContent.hero.imageUrl}
-                    alt={siteContent.hero.title}
-                    className="w-full h-auto max-h-[560px] object-contain block"
-                  />
-                </div>
+                <HeroSlider
+                  slides={siteContent.hero.slides}
+                  fallbackImageUrl={siteContent.hero.imageUrl}
+                  altTitle={siteContent.hero.title}
+                  autoPlay={siteContent.hero.slideAutoPlay ?? true}
+                  intervalSec={siteContent.hero.slideIntervalSec ?? 5}
+                />
               )}
             </div>
           </section>

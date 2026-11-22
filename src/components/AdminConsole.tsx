@@ -12,6 +12,7 @@ import {
   EyeOff,
   FileText,
   Image as ImageIcon,
+  KeyRound,
   Layers,
   LogOut,
   Plus,
@@ -21,11 +22,17 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider, SUPER_ADMIN_EMAIL } from '../lib/firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import {
+  auth,
+  formatAdminAuthError,
+  signInWithGoogleSelectAccount,
+  SUPER_ADMIN_EMAIL,
+} from '../lib/firebase';
 import {
   adminUpsertMember,
   adminVerifyEnrollmentPayment,
+  changeOwnAdminPin,
   deleteAdminUser,
   deleteArtisan,
   deleteContactSubmission,
@@ -166,10 +173,18 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
   onExitToStorefront,
 }) => {
   const [activeAdmin, setActiveAdmin] = useState<AdminUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(() => auth.currentUser);
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPin, setLoginPin] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+    });
+    return () => unsub();
+  }, []);
 
   const [tab, setTab] = useState<AdminTab>('analytics');
   const [loadingAll, setLoadingAll] = useState(false);
@@ -236,6 +251,14 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
   const mediaFileRef = useRef<HTMLInputElement>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
+  const [showOwnPinModal, setShowOwnPinModal] = useState(false);
+  const [ownCurrentPin, setOwnCurrentPin] = useState('');
+  const [ownNewPin, setOwnNewPin] = useState('');
+  const [ownConfirmPin, setOwnConfirmPin] = useState('');
+  const [ownPinSaving, setOwnPinSaving] = useState(false);
+  const [ownPinError, setOwnPinError] = useState('');
+  const [ownPinSuccess, setOwnPinSuccess] = useState('');
+
   const hasPermission = (key: keyof AdminPermissions) => {
     if (!activeAdmin) return false;
     if (activeAdmin.isSuperAdmin) return true;
@@ -299,22 +322,92 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
     }
   }, [activeAdmin?.id]);
 
+  const handleGoogleSwitchAccount = async () => {
+    setLoginError('');
+    setLoginLoading(true);
+    try {
+      const user = await signInWithGoogleSelectAccount();
+      setFirebaseUser(user);
+    } catch (err) {
+      setLoginError(formatAdminAuthError(err));
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    setLoginError('');
+    await signOut(auth);
+    setFirebaseUser(null);
+  };
+
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     setLoginLoading(true);
     try {
       if (!auth.currentUser) {
-        await signInWithPopup(auth, googleProvider);
+        const user = await signInWithGoogleSelectAccount();
+        setFirebaseUser(user);
       }
       await seedDatabaseIfEmpty();
       const admin = await loginAdminWithPhonePin(loginPhone, loginPin);
       setActiveAdmin(admin);
       setLoginPin('');
     } catch (err) {
-      setLoginError(err instanceof Error ? err.message : '管理員登入失敗');
+      setLoginError(formatAdminAuthError(err));
     } finally {
       setLoginLoading(false);
+    }
+  };
+
+  const openOwnPinModal = () => {
+    setOwnCurrentPin('');
+    setOwnNewPin('');
+    setOwnConfirmPin('');
+    setOwnPinError('');
+    setOwnPinSuccess('');
+    setShowOwnPinModal(true);
+  };
+
+  const handleOwnPinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeAdmin) return;
+    setOwnPinError('');
+    setOwnPinSuccess('');
+
+    if (!/^\d{6}$/.test(ownCurrentPin)) {
+      setOwnPinError('請輸入目前的 6 位數數字 PIN 碼');
+      return;
+    }
+    if (!/^\d{6}$/.test(ownNewPin)) {
+      setOwnPinError('新 PIN 碼必須為 6 位數純數字');
+      return;
+    }
+    if (ownNewPin !== ownConfirmPin) {
+      setOwnPinError('兩次輸入的新 PIN 碼不一致，請重新確認');
+      return;
+    }
+
+    setOwnPinSaving(true);
+    try {
+      const updatedHash = await changeOwnAdminPin({
+        adminId: activeAdmin.id,
+        currentPin: ownCurrentPin,
+        newPin: ownNewPin,
+      });
+      setActiveAdmin((prev) => (prev ? { ...prev, pinHash: updatedHash } : prev));
+      setAdminUsers((prev) =>
+        prev.map((a) => (a.id === activeAdmin.id ? { ...a, pinHash: updatedHash } : a))
+      );
+      setOwnCurrentPin('');
+      setOwnNewPin('');
+      setOwnConfirmPin('');
+      setOwnPinSuccess('您的 6 位數 PIN 碼已更新成功，下次登入請使用新 PIN 碼。');
+    } catch (err) {
+      setOwnPinError(formatAdminAuthError(err));
+    } finally {
+      setOwnPinSaving(false);
     }
   };
 
@@ -352,17 +445,55 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
           <div className="space-y-2">
             <h1 className="text-2xl font-serif text-[#1b1c1c]">工坊後台管理系統登入</h1>
             <p className="text-sm text-[#51443d]">
-              請輸入管理員手提電話號碼與 6 位數數字 PIN 碼，系統將依您的角色權限載入管理模組。
+              請先完成 Google 管理員信箱驗證，再輸入管理員手提電話號碼與 6 位數數字 PIN 碼登入。
             </p>
           </div>
 
-          <div className="bg-[#f6f3f2] border border-[#e0d8d3] rounded-lg p-4 text-xs text-[#51443d] space-y-1">
-            <p className="font-medium text-[#70472d]">首次啟用說明（總監超級管理員）</p>
-            <p>
-              使用管理員信箱 <span className="font-medium">{SUPER_ADMIN_EMAIL}</span> 完成 Google
-              安全驗證後，預設超級管理員帳號為 <strong className="tabular-nums">0900000000</strong>
-              、PIN 碼 <strong className="tabular-nums">000000</strong>（登入後可立即修改 PIN 與新增其他管理員）。
-            </p>
+          <div className="bg-[#f6f3f2] border border-[#e0d8d3] rounded-lg p-4 text-xs text-[#51443d] space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium text-[#70472d]">Google 安全驗證狀態</span>
+              <span
+                className={`font-medium ${
+                  firebaseUser?.email ? 'text-[#70472d]' : 'text-[#b0704c]'
+                }`}
+              >
+                {firebaseUser?.email ? '已驗證帳號' : '尚未驗證'}
+              </span>
+            </div>
+            {firebaseUser?.email ? (
+              <p className="text-[#1b1c1c] break-all">
+                目前帳號：<strong>{firebaseUser.email}</strong>
+                {firebaseUser.email !== SUPER_ADMIN_EMAIL && (
+                  <span className="block text-[11px] text-[#73594c] mt-0.5">
+                    若非已綁定管理權限的信箱，請切換為總監信箱 {SUPER_ADMIN_EMAIL}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p>
+                請使用總監信箱 <span className="font-medium">{SUPER_ADMIN_EMAIL}</span> 或已授權的管理員 Google 帳號進行驗證。預設超級管理員電話 <strong className="tabular-nums">0900000000</strong>、PIN <strong className="tabular-nums">000000</strong>。
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <button
+                type="button"
+                disabled={loginLoading}
+                onClick={() => void handleGoogleSwitchAccount()}
+                className="px-3 h-8 rounded-lg bg-white border border-[#e0d8d3] text-xs font-medium text-[#70472d] hover:bg-[#e8ded8]/60 cursor-pointer disabled:opacity-50"
+              >
+                {firebaseUser ? '切換 Google 帳號' : '立即進行 Google 驗證'}
+              </button>
+              {firebaseUser && (
+                <button
+                  type="button"
+                  disabled={loginLoading}
+                  onClick={() => void handleGoogleSignOut()}
+                  className="px-3 h-8 rounded-lg border border-[#e0d8d3] text-xs text-[#51443d] hover:bg-white cursor-pointer disabled:opacity-50"
+                >
+                  登出 Google
+                </button>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
@@ -391,7 +522,11 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
               />
             </label>
 
-            {loginError && <p className="text-xs text-[#ba1a1a]">{loginError}</p>}
+            {loginError && (
+              <div className="p-3 rounded-lg bg-[#ffdad6]/60 border border-[#ba1a1a]/30 text-xs text-[#93000a] leading-relaxed">
+                {loginError}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -468,6 +603,24 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
             <p className="text-xs text-[#51443d]">
               {activeAdmin.name} · {activeAdmin.roleTitle}
             </p>
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={openOwnPinModal}
+                className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e0d8d3] bg-white text-xs font-medium text-[#70472d] hover:bg-[#e8ded8]/50 cursor-pointer"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                修改我的 PIN 碼
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveAdmin(null)}
+                className="lg:hidden inline-flex items-center gap-1.5 px-3 h-8 rounded-lg border border-[#e0d8d3] bg-white text-xs font-medium text-[#51443d] hover:bg-[#e8ded8]/50 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                登出
+              </button>
+            </div>
           </div>
 
           <nav className="flex lg:flex-col gap-1.5 overflow-x-auto pb-2 lg:pb-0">
@@ -2725,6 +2878,107 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Self-service Own 6-digit PIN Change Modal */}
+      {showOwnPinModal && activeAdmin && (
+        <div className="fixed inset-0 z-50 bg-[#1b1c1c]/45 flex items-center justify-center p-4">
+          <form
+            onSubmit={handleOwnPinSubmit}
+            className="bg-white border border-[#e0d8d3] rounded-lg max-w-md w-full p-6 space-y-4 shadow-warm"
+          >
+            <div className="flex items-center justify-between border-b border-[#e0d8d3] pb-3">
+              <h3 className="text-lg font-serif text-[#1b1c1c]">修改我的 6 位數 PIN 碼</h3>
+              <button
+                type="button"
+                onClick={() => setShowOwnPinModal(false)}
+                className="cursor-pointer text-[#51443d] hover:text-[#1b1c1c]"
+                aria-label="關閉"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-[#f6f3f2] border border-[#e0d8d3] rounded-lg px-3.5 py-2.5 text-xs text-[#51443d] space-y-0.5">
+              <p className="font-medium text-[#1b1c1c]">
+                {activeAdmin.name}（{activeAdmin.roleTitle}）
+              </p>
+              <p className="tabular-nums">登入電話：{activeAdmin.phone}</p>
+            </div>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-[#51443d]">目前 6 位數 PIN 碼 *</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                required
+                value={ownCurrentPin}
+                onChange={(e) => setOwnCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="輸入目前使用的 6 位數字"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#e0d8d3] text-sm tracking-[0.25em] tabular-nums focus:outline-none focus:border-[#8c5e43]"
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-[#51443d]">新 6 位數 PIN 碼 *</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                required
+                value={ownNewPin}
+                onChange={(e) => setOwnNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="設定新的 6 位數字"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#e0d8d3] text-sm tracking-[0.25em] tabular-nums focus:outline-none focus:border-[#8c5e43]"
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-[#51443d]">再次確認新 6 位數 PIN 碼 *</span>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                required
+                value={ownConfirmPin}
+                onChange={(e) => setOwnConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="再次輸入新的 6 位數字"
+                className="w-full h-11 px-3.5 rounded-lg border border-[#e0d8d3] text-sm tracking-[0.25em] tabular-nums focus:outline-none focus:border-[#8c5e43]"
+              />
+            </label>
+
+            {ownPinError && (
+              <div className="p-3 rounded-lg bg-[#ffdad6]/60 border border-[#ba1a1a]/30 text-xs text-[#93000a] leading-relaxed">
+                {ownPinError}
+              </div>
+            )}
+
+            {ownPinSuccess && (
+              <div className="p-3 rounded-lg bg-[#e8ded8]/60 border border-[#8c5e43]/40 text-xs text-[#70472d] leading-relaxed flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{ownPinSuccess}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowOwnPinModal(false)}
+                className="px-4 h-10 rounded-lg border border-[#e0d8d3] text-xs cursor-pointer"
+              >
+                {ownPinSuccess ? '完成並關閉' : '取消'}
+              </button>
+              <button
+                type="submit"
+                disabled={ownPinSaving}
+                className="px-6 h-10 rounded-lg bg-[#8c5e43] text-white text-xs font-medium hover:bg-[#73594c] cursor-pointer disabled:opacity-50"
+              >
+                {ownPinSaving ? '更新儲存中...' : '確認修改 PIN 碼'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

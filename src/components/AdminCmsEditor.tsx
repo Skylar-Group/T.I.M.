@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, History, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, EyeOff, History, Plus, RotateCcw, Save, Trash2, X } from 'lucide-react';
 import {
   deleteCmsRevision,
   formatDateTime,
@@ -9,6 +9,7 @@ import {
   AdminUser,
   CmsRevision,
   CustomBlock,
+  HeroSlide,
   isFieldVisible,
   MediaAsset,
   PublicPageKey,
@@ -69,14 +70,36 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
   onSiteContentPublished,
   onRevisionsRefresh,
 }) => {
-  const [draft, setDraft] = useState<SiteContent>(() => {
-    const initial: SiteContent = JSON.parse(JSON.stringify(siteContent));
+  const normalizeDraftContent = (raw: SiteContent): SiteContent => {
+    const cloned: SiteContent = JSON.parse(JSON.stringify(raw));
+    const existingSlides = Array.isArray(cloned.hero?.slides)
+      ? cloned.hero.slides
+      : cloned.hero?.imageUrl
+      ? [
+          {
+            id: 'hero-slide-1',
+            imageUrl: cloned.hero.imageUrl,
+            caption: '',
+            captionVisible: false,
+            isVisible: true,
+            order: 1,
+          },
+        ]
+      : [];
     return {
-      ...initial,
-      brandLogoUrl: initial.brandLogoUrl ?? '',
-      brandLogoVisible: initial.brandLogoVisible ?? true,
+      ...cloned,
+      hero: {
+        ...cloned.hero,
+        slides: existingSlides,
+        slideAutoPlay: cloned.hero?.slideAutoPlay ?? true,
+        slideIntervalSec: cloned.hero?.slideIntervalSec ?? 5,
+      },
+      brandLogoUrl: cloned.brandLogoUrl ?? '',
+      brandLogoVisible: cloned.brandLogoVisible ?? true,
     };
-  });
+  };
+
+  const [draft, setDraft] = useState<SiteContent>(() => normalizeDraftContent(siteContent));
   const [sectionTab, setSectionTab] = useState<
     'brand_nav' | 'hero' | 'philosophy' | 'sections' | 'contact_bank' | 'footer' | 'custom_blocks'
   >('hero');
@@ -113,15 +136,44 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
   };
 
   const handleRecallRevision = (rev: CmsRevision) => {
-    const loaded: SiteContent = JSON.parse(JSON.stringify(rev.snapshot));
-    setDraft({
-      ...loaded,
-      brandLogoUrl: loaded.brandLogoUrl ?? '',
-      brandLogoVisible: loaded.brandLogoVisible ?? true,
-    });
+    setDraft(normalizeDraftContent(rev.snapshot));
     setRevisionTitle(`延續修改：${rev.revisionTitle}`);
     setShowHistory(false);
     setStatusMsg(`已載入「${rev.revisionTitle}」到編輯器，您可繼續修改並重新發佈。`);
+  };
+
+  const updateHeroSlides = (nextSlides: HeroSlide[]) => {
+    const normalized = nextSlides.map((s, idx) => ({ ...s, order: idx + 1 }));
+    const firstImg = normalized.find((s) => s.isVisible && s.imageUrl)?.imageUrl || normalized[0]?.imageUrl || '';
+    setDraft({
+      ...draft,
+      hero: {
+        ...draft.hero,
+        slides: normalized,
+        imageUrl: firstImg || draft.hero.imageUrl,
+      },
+    });
+  };
+
+  const handleAddHeroSlide = () => {
+    const slides = draft.hero.slides || [];
+    const newSlide: HeroSlide = {
+      id: `hero-slide-${Date.now()}`,
+      imageUrl: GENERATED_IMAGES.heroStudio,
+      caption: '',
+      captionVisible: true,
+      isVisible: true,
+      order: slides.length + 1,
+    };
+    updateHeroSlides([...slides, newSlide]);
+  };
+
+  const handleMoveHeroSlide = (index: number, direction: -1 | 1) => {
+    const slides = [...(draft.hero.slides || [])];
+    const target = index + direction;
+    if (target < 0 || target >= slides.length) return;
+    [slides[index], slides[target]] = [slides[target], slides[index]];
+    updateHeroSlides(slides);
   };
 
   const handleAddNavItem = () => {
@@ -538,14 +590,147 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
               />
             </div>
 
-            <MediaPickerButton
-              label="首頁主視覺圖片"
-              value={draft.hero.imageUrl}
-              onChange={(url) => setDraft({ ...draft, hero: { ...draft.hero, imageUrl: url } })}
-              category="cms"
-              mediaAssets={mediaAssets}
-              onUploaded={onMediaUploaded}
-            />
+            <div className="space-y-4 pt-4 border-t border-[#e0d8d3]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-medium text-[#1b1c1c]">
+                    首頁主視覺幻燈片 Slide 管理（{draft.hero.slides?.length || 0} 張）
+                  </h4>
+                  <p className="text-xs text-[#73594c]">
+                    支援多張圖片自動輪播與左右切換，每張相片皆可獨立新增、修改說明文字、調整順序、隱藏或刪除。
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <VisibilityToggle
+                    checked={draft.hero.slideAutoPlay ?? true}
+                    onChange={(val) =>
+                      setDraft({ ...draft, hero: { ...draft.hero, slideAutoPlay: val } })
+                    }
+                    label="自動輪播"
+                  />
+                  <label className="inline-flex items-center gap-1.5 text-xs text-[#51443d]">
+                    <span>切換秒數</span>
+                    <select
+                      value={draft.hero.slideIntervalSec ?? 5}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          hero: { ...draft.hero, slideIntervalSec: Number(e.target.value) },
+                        })
+                      }
+                      className="h-8 px-2.5 rounded-lg border border-[#e0d8d3] bg-white text-xs tabular-nums"
+                    >
+                      <option value={3}>3 秒</option>
+                      <option value={5}>5 秒</option>
+                      <option value={7}>7 秒</option>
+                      <option value={10}>10 秒</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddHeroSlide}
+                    className="inline-flex items-center gap-1.5 px-3.5 h-8 rounded-lg bg-[#8c5e43] text-white text-xs font-medium hover:bg-[#73594c] cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    新增幻燈片 Slide
+                  </button>
+                </div>
+              </div>
+
+              {(draft.hero.slides || []).length === 0 ? (
+                <div className="p-6 rounded-lg bg-[#fcf9f8] border border-dashed border-[#e0d8d3] text-center text-xs text-[#73594c]">
+                  目前尚無幻燈片圖片，請點擊右上方「新增幻燈片 Slide」加入首頁主視覺輪播圖。
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(draft.hero.slides || []).map((slide, idx) => (
+                    <div
+                      key={slide.id}
+                      className="p-4 rounded-lg bg-[#fcf9f8] border border-[#e0d8d3] space-y-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e0d8d3] pb-3">
+                        <span className="text-xs font-medium text-[#70472d] tabular-nums">
+                          幻燈片 Slide #{idx + 1}
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveHeroSlide(idx, -1)}
+                            className="p-1.5 rounded-lg border border-[#e0d8d3] bg-white text-[#51443d] hover:bg-[#e8ded8]/50 disabled:opacity-40 cursor-pointer"
+                            aria-label="上移此張幻燈片"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === (draft.hero.slides?.length || 0) - 1}
+                            onClick={() => handleMoveHeroSlide(idx, 1)}
+                            className="p-1.5 rounded-lg border border-[#e0d8d3] bg-white text-[#51443d] hover:bg-[#e8ded8]/50 disabled:opacity-40 cursor-pointer"
+                            aria-label="下移此張幻燈片"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                          <VisibilityToggle
+                            checked={slide.isVisible}
+                            onChange={(val) => {
+                              const next = [...(draft.hero.slides || [])];
+                              next[idx] = { ...slide, isVisible: val };
+                              updateHeroSlides(next);
+                            }}
+                            label="此張圖片"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = (draft.hero.slides || []).filter(
+                                (s) => s.id !== slide.id
+                              );
+                              updateHeroSlides(next);
+                            }}
+                            className="p-1.5 rounded-lg text-[#ba1a1a] hover:bg-[#ffdad6]/50 cursor-pointer"
+                            aria-label="刪除此張幻燈片"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <MediaPickerButton
+                        label={`幻燈片 #${idx + 1} 圖片`}
+                        value={slide.imageUrl}
+                        onChange={(url) => {
+                          const next = [...(draft.hero.slides || [])];
+                          next[idx] = { ...slide, imageUrl: url };
+                          updateHeroSlides(next);
+                        }}
+                        category="cms"
+                        mediaAssets={mediaAssets}
+                        onUploaded={onMediaUploaded}
+                      />
+
+                      <TextFieldWithVisibility
+                        compact
+                        label={`幻燈片 #${idx + 1} 圖片底部說明文字（選填）`}
+                        value={slide.caption || ''}
+                        placeholder="輸入此張圖片簡短介紹或活動提示（可留空）"
+                        onChange={(val) => {
+                          const next = [...(draft.hero.slides || [])];
+                          next[idx] = { ...slide, caption: val };
+                          updateHeroSlides(next);
+                        }}
+                        visible={slide.captionVisible ?? true}
+                        onToggleVisible={(val) => {
+                          const next = [...(draft.hero.slides || [])];
+                          next[idx] = { ...slide, captionVisible: val };
+                          updateHeroSlides(next);
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

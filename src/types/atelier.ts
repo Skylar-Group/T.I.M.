@@ -38,6 +38,15 @@ export interface CustomBlock {
   fieldVisibility?: FieldVisibilityMap;
 }
 
+export interface HeroSlide {
+  id: string;
+  imageUrl: string;
+  caption?: string;
+  captionVisible?: boolean;
+  isVisible: boolean;
+  order: number;
+}
+
 export interface SiteContent {
   brandName: string;
   brandVisible: boolean;
@@ -53,6 +62,9 @@ export interface SiteContent {
     secondaryCtaText: string;
     imageUrl: string;
     imageVisible: boolean;
+    slides?: HeroSlide[];
+    slideAutoPlay?: boolean;
+    slideIntervalSec?: number;
     fieldVisibility?: FieldVisibilityMap;
   };
   philosophy: {

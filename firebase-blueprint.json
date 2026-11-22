@@ -247,6 +247,19 @@
       },
       "required": ["uid", "email", "adminUserId", "createdAt"]
     },
+    "AdminEmail": {
+      "title": "AdminEmail",
+      "description": "Authorized admin email lookup document allowing bound sub-admins to pass Firestore isAdmin() check.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 120 },
+        "adminUserId": { "type": "string", "maxLength": 128 },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "adminUserId", "isActive", "createdAt", "updatedAt"]
+    },
     "InstructorSessionRecord": {
       "title": "InstructorSessionRecord",
       "description": "Per-class session teaching log recording instructor attendance, leave, salary, and monthly accounting.",
@@ -320,6 +333,10 @@
     "/admin_identities/{uid}": {
       "schema": { "$ref": "#/entities/AdminIdentity" },
       "description": "Maps verified Firebase UIDs to admin privileges."
+    },
+    "/admin_emails/{emailKey}": {
+      "schema": { "$ref": "#/entities/AdminEmail" },
+      "description": "Maps verified bound admin email keys to admin privileges."
     },
     "/instructor_sessions/{recordId}": {
       "schema": { "$ref": "#/entities/InstructorSessionRecord" },

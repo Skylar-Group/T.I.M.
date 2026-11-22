@@ -460,9 +460,34 @@ export async function fetchSiteContent(): Promise<SiteContent> {
     const snap = await getDoc(doc(db, 'site_content', 'published'));
     if (!snap.exists()) return DEFAULT_SITE_CONTENT;
     const raw = snap.data() as Partial<SiteContent>;
+    const rawHero = raw.hero;
+    const defaultSlides = DEFAULT_SITE_CONTENT.hero.slides || [];
+    const hydratedSlides = Array.isArray(rawHero?.slides)
+      ? rawHero.slides
+      : rawHero?.imageUrl && rawHero.imageUrl !== DEFAULT_SITE_CONTENT.hero.imageUrl
+      ? [
+          {
+            id: 'hero-slide-1',
+            imageUrl: rawHero.imageUrl,
+            caption: '',
+            captionVisible: false,
+            isVisible: true,
+            order: 1,
+          },
+          ...defaultSlides.slice(1),
+        ]
+      : defaultSlides;
+
     return {
       ...DEFAULT_SITE_CONTENT,
       ...raw,
+      hero: {
+        ...DEFAULT_SITE_CONTENT.hero,
+        ...(rawHero || {}),
+        slides: hydratedSlides,
+        slideAutoPlay: rawHero?.slideAutoPlay ?? true,
+        slideIntervalSec: rawHero?.slideIntervalSec ?? 5,
+      },
       brandLogoUrl: raw.brandLogoUrl ?? '',
       brandLogoVisible: raw.brandLogoVisible ?? true,
     };
@@ -472,13 +497,31 @@ export async function fetchSiteContent(): Promise<SiteContent> {
 }
 
 function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
+  const cleanSlides = Array.isArray(content.hero.slides)
+    ? content.hero.slides.slice(0, 12).map((s, idx) => ({
+        id: String(s.id || `hero-slide-${idx + 1}`).slice(0, 64),
+        imageUrl: String(s.imageUrl || '').slice(0, 300),
+        caption: String(s.caption || '').slice(0, 200),
+        captionVisible: s.captionVisible ?? true,
+        isVisible: s.isVisible ?? true,
+        order: Number.isFinite(s.order) ? s.order : idx + 1,
+      }))
+    : [];
+  const firstVisibleSlide = cleanSlides.find((s) => s.isVisible && s.imageUrl) || cleanSlides[0];
+
   return {
     brandName: content.brandName,
     brandVisible: content.brandVisible,
     brandLogoUrl: content.brandLogoUrl || '',
     brandLogoVisible: content.brandLogoVisible ?? true,
     navItems: content.navItems,
-    hero: content.hero,
+    hero: {
+      ...content.hero,
+      imageUrl: (firstVisibleSlide?.imageUrl || content.hero.imageUrl || '').slice(0, 300),
+      slides: cleanSlides,
+      slideAutoPlay: content.hero.slideAutoPlay ?? true,
+      slideIntervalSec: Math.min(30, Math.max(2, Number(content.hero.slideIntervalSec || 5))),
+    },
     philosophy: content.philosophy,
     coursesSection: content.coursesSection,
     gallerySection: content.gallerySection,
@@ -1364,6 +1407,30 @@ export async function fetchAllAdminUsers(): Promise<AdminUser[]> {
   }
 }
 
+function toAdminEmailKey(email: string): string {
+  return email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
+async function syncAdminEmailEntry(
+  email: string,
+  adminUserId: string,
+  isActive: boolean
+): Promise<void> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) return;
+  const key = toAdminEmailKey(cleanEmail);
+  if (!key) return;
+  const ref = doc(db, 'admin_emails', key);
+  const existing = await getDoc(ref);
+  await setDoc(ref, {
+    email: cleanEmail.slice(0, 120),
+    adminUserId: adminUserId.slice(0, 128),
+    isActive: Boolean(isActive),
+    createdAt: existing.exists() ? existing.data().createdAt || serverTimestamp() : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function saveAdminUser(params: {
   id?: string;
   phone: string;
@@ -1395,6 +1462,15 @@ export async function saveAdminUser(params: {
   const isEdit = Boolean(params.id);
   const path = isEdit ? `admin_users/${params.id}` : 'admin_users';
   try {
+    let previousEmail = '';
+    if (isEdit && params.id) {
+      const prevSnap = await getDoc(doc(db, 'admin_users', params.id));
+      if (prevSnap.exists()) {
+        previousEmail = String(prevSnap.data().boundEmail || '').trim().toLowerCase();
+      }
+    }
+
+    const cleanBoundEmail = params.boundEmail.trim().toLowerCase();
     const payload = {
       phone,
       name: params.name.trim(),
@@ -1406,19 +1482,28 @@ export async function saveAdminUser(params: {
       permissions: params.permissions,
       updatedAt: serverTimestamp(),
     };
+    let savedId = params.id || '';
     if (isEdit && params.id) {
       await updateDoc(doc(db, 'admin_users', params.id), {
         ...payload,
         createdAt: params.createdAt || serverTimestamp(),
       });
-      return params.id;
+      savedId = params.id;
     } else {
       const ref = await addDoc(collection(db, 'admin_users'), {
         ...payload,
         createdAt: serverTimestamp(),
       });
-      return ref.id;
+      savedId = ref.id;
     }
+
+    if (previousEmail && previousEmail !== cleanBoundEmail) {
+      await deleteDoc(doc(db, 'admin_emails', toAdminEmailKey(previousEmail))).catch(() => {});
+    }
+    if (cleanBoundEmail) {
+      await syncAdminEmailEntry(cleanBoundEmail, savedId, params.isActive);
+    }
+    return savedId;
   } catch (error) {
     handleFirestoreError(error, isEdit ? OperationType.UPDATE : OperationType.CREATE, path);
   }
@@ -1427,7 +1512,12 @@ export async function saveAdminUser(params: {
 export async function deleteAdminUser(id: string): Promise<void> {
   const path = `admin_users/${id}`;
   try {
+    const snap = await getDoc(doc(db, 'admin_users', id));
+    const boundEmail = snap.exists() ? String(snap.data().boundEmail || '').trim().toLowerCase() : '';
     await deleteDoc(doc(db, 'admin_users', id));
+    if (boundEmail) {
+      await deleteDoc(doc(db, 'admin_emails', toAdminEmailKey(boundEmail))).catch(() => {});
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -1451,6 +1541,71 @@ export async function loginAdminWithPhonePin(phoneInput: string, pin: string): P
     throw new Error('管理員 6 位數 PIN 碼不正確');
   }
   return target;
+}
+
+export async function changeOwnAdminPin(params: {
+  adminId: string;
+  currentPin: string;
+  newPin: string;
+}): Promise<string> {
+  const user = auth.currentUser;
+  if (!user || !user.emailVerified || !user.email) {
+    throw new Error('請先完成 Google 管理員信箱驗證後再修改 PIN 碼');
+  }
+
+  const currentPin = params.currentPin.trim();
+  const newPin = params.newPin.trim();
+  if (!/^\d{6}$/.test(currentPin)) {
+    throw new Error('請輸入目前的 6 位數純數字 PIN 碼');
+  }
+  if (!/^\d{6}$/.test(newPin)) {
+    throw new Error('新 PIN 碼必須為 6 位數純數字');
+  }
+  if (currentPin === newPin) {
+    throw new Error('新 6 位數 PIN 碼不可與目前的 PIN 碼相同');
+  }
+
+  const path = `admin_users/${params.adminId}`;
+  try {
+    const ref = doc(db, 'admin_users', params.adminId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      throw new Error('找不到您的管理員帳號資料，請重新登入後再試');
+    }
+    const data = snap.data() as Omit<AdminUser, 'id'>;
+    if (!data.isActive) {
+      throw new Error('此管理員帳號已被停用，無法修改 PIN 碼');
+    }
+
+    const signedEmail = user.email.trim().toLowerCase();
+    const boundEmail = String(data.boundEmail || '').trim().toLowerCase();
+    if (boundEmail && signedEmail !== boundEmail && signedEmail !== SUPER_ADMIN_EMAIL.toLowerCase()) {
+      throw new Error('目前登入的 Google 帳號與此管理員綁定信箱不符，無法修改此帳號之 PIN 碼');
+    }
+
+    const currentHash = await hashPin(currentPin, data.phone);
+    if (currentHash !== data.pinHash) {
+      throw new Error('目前的 6 位數 PIN 碼不正確，請重新確認');
+    }
+
+    const newPinHash = await hashPin(newPin, data.phone);
+    await updateDoc(ref, {
+      pinHash: newPinHash,
+      updatedAt: serverTimestamp(),
+    });
+    return newPinHash;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('PIN') ||
+        error.message.includes('找不到') ||
+        error.message.includes('停用') ||
+        error.message.includes('Google'))
+    ) {
+      throw error;
+    }
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
 }
 
 // Seed initial catalog + default Super Admin when owner first accesses database
@@ -1501,7 +1656,7 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
     if (adminSnap.empty) {
       const defaultPhone = '0900000000';
       const pinHash = await hashPin('000000', defaultPhone);
-      await addDoc(collection(db, 'admin_users'), {
+      const ref = await addDoc(collection(db, 'admin_users'), {
         phone: defaultPhone,
         name: '總監主理人',
         roleTitle: '系統超級管理員',
@@ -1523,6 +1678,16 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      await syncAdminEmailEntry(SUPER_ADMIN_EMAIL, ref.id, true);
+    } else {
+      for (const d of adminSnap.docs) {
+        const data = d.data() as Partial<AdminUser>;
+        if (data.boundEmail && String(data.boundEmail).includes('@')) {
+          await syncAdminEmailEntry(String(data.boundEmail), d.id, data.isActive !== false).catch(
+            () => {}
+          );
+        }
+      }
     }
   } catch (error) {
     console.warn('Initial seed check skipped or partial:', error);
