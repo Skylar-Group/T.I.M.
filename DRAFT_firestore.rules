@@ -43,10 +43,12 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSuperAdminEmail() || (
-        isVerifiedUser() && (
-          exists(/databases/$(database)/documents/admin_identities/$(request.auth.uid)) ||
-          isAdminEmailRegistered()
-        )
+        isVerifiedUser() && isAdminEmailRegistered()
+      ) || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/admin_identities/$(request.auth.uid)) &&
+        exists(/databases/$(database)/documents/admin_users/$(get(/databases/$(database)/documents/admin_identities/$(request.auth.uid)).data.adminUserId)) &&
+        get(/databases/$(database)/documents/admin_users/$(get(/databases/$(database)/documents/admin_identities/$(request.auth.uid)).data.adminUserId)).data.isActive == true
       );
     }
 
@@ -308,11 +310,20 @@ service cloud.firestore {
 
     function isValidAdminIdentity(data) {
       return data.keys().hasAll(['uid', 'email', 'adminUserId', 'createdAt']) &&
-        data.keys().hasOnly(['uid', 'email', 'adminUserId', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'adminUserId', 'credentialHash', 'createdAt']) &&
         data.uid is string && data.uid.size() > 0 && data.uid.size() <= 128 &&
         data.email is string && data.email.size() <= 120 &&
-        data.adminUserId is string && data.adminUserId.size() <= 128 &&
+        data.adminUserId is string && data.adminUserId.size() > 0 && data.adminUserId.size() <= 128 &&
+        (!('credentialHash' in data) || (data.credentialHash is string && data.credentialHash.size() >= 32 && data.credentialHash.size() <= 128)) &&
         data.createdAt == request.time;
+    }
+
+    function isValidAdminPasscode(data) {
+      return data.keys().hasAll(['adminUserId', 'isActive', 'updatedAt']) &&
+        data.keys().hasOnly(['adminUserId', 'isActive', 'updatedAt']) &&
+        data.adminUserId is string && data.adminUserId.size() > 0 && data.adminUserId.size() <= 128 &&
+        data.isActive is bool &&
+        data.updatedAt == request.time;
     }
 
     function isValidAdminEmail(data) {
@@ -499,12 +510,42 @@ service cloud.firestore {
       allow delete: if isValidId(adminId) && isAdmin();
     }
 
-    // Admin Firebase UID identities
+    // Admin Firebase UID identities (validated against hashed passcode or existing admin)
     match /admin_identities/{uid} {
-      allow get: if isValidId(uid) && (isAdmin() || (isVerifiedUser() && uid == request.auth.uid));
+      allow get: if isValidId(uid) && (isAdmin() || (isSignedIn() && uid == request.auth.uid));
       allow list: if isAdmin();
-      allow create, update: if isValidId(uid) && isAdmin() && isValidAdminIdentity(incoming());
-      allow delete: if isValidId(uid) && isSuperAdminEmail();
+      allow create, update: if isValidId(uid) && isSignedIn() && isValidAdminIdentity(incoming()) && (
+        isAdmin() || (
+          uid == request.auth.uid &&
+          incoming().uid == request.auth.uid &&
+          'credentialHash' in incoming() &&
+          isValidId(incoming().credentialHash) &&
+          exists(/databases/$(database)/documents/admin_passcodes/$(incoming().credentialHash)) &&
+          get(/databases/$(database)/documents/admin_passcodes/$(incoming().credentialHash)).data.isActive == true &&
+          get(/databases/$(database)/documents/admin_passcodes/$(incoming().credentialHash)).data.adminUserId == incoming().adminUserId
+        )
+      );
+      allow delete: if isValidId(uid) && (isSuperAdminEmail() || (isSignedIn() && uid == request.auth.uid));
+    }
+
+    // Hashed Phone+PIN lookup (no PII, list forbidden)
+    match /admin_passcodes/{credentialHash} {
+      allow get: if isValidId(credentialHash) && isSignedIn();
+      allow list: if false;
+      allow create, update: if isValidId(credentialHash) && isAdmin() && isValidAdminPasscode(incoming());
+      allow delete: if isValidId(credentialHash) && isAdmin();
+    }
+
+    // Non-PII system bootstrap flag
+    match /system_meta/{docId} {
+      allow get: if isValidId(docId);
+      allow list: if false;
+      allow create, update: if isValidId(docId) && isAdmin() &&
+        incoming().keys().hasAll(['synced', 'updatedAt']) &&
+        incoming().keys().hasOnly(['synced', 'updatedAt']) &&
+        incoming().synced is bool &&
+        incoming().updatedAt == request.time;
+      allow delete: if false;
     }
 
     // Admin bound-email registry

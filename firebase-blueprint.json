@@ -243,9 +243,31 @@
         "uid": { "type": "string", "maxLength": 128 },
         "email": { "type": "string", "maxLength": 120 },
         "adminUserId": { "type": "string", "maxLength": 128 },
+        "credentialHash": { "type": "string", "maxLength": 128 },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "adminUserId", "createdAt"]
+    },
+    "AdminPasscode": {
+      "title": "AdminPasscode",
+      "description": "Hashed Phone+PIN credential lookup document keyed by SHA-256 credentialHash (contains no PII; list disabled).",
+      "type": "object",
+      "properties": {
+        "adminUserId": { "type": "string", "maxLength": 128 },
+        "isActive": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["adminUserId", "isActive", "updatedAt"]
+    },
+    "SystemMeta": {
+      "title": "SystemMeta",
+      "description": "Non-PII system bootstrap and sync flag.",
+      "type": "object",
+      "properties": {
+        "synced": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["synced", "updatedAt"]
     },
     "AdminEmail": {
       "title": "AdminEmail",
@@ -333,6 +355,14 @@
     "/admin_identities/{uid}": {
       "schema": { "$ref": "#/entities/AdminIdentity" },
       "description": "Maps verified Firebase UIDs to admin privileges."
+    },
+    "/admin_passcodes/{credentialHash}": {
+      "schema": { "$ref": "#/entities/AdminPasscode" },
+      "description": "Maps SHA-256 Phone+PIN hashes to active adminUserId (get-only, no list)."
+    },
+    "/system_meta/{docId}": {
+      "schema": { "$ref": "#/entities/SystemMeta" },
+      "description": "Non-PII system bootstrap and sync flag."
     },
     "/admin_emails/{emailKey}": {
       "schema": { "$ref": "#/entities/AdminEmail" },

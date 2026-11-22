@@ -1,11 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import {
-  createUserWithEmailAndPassword,
   getAuth,
-  sendEmailVerification,
-  sendPasswordResetEmail,
+  GoogleAuthProvider,
   signInAnonymously,
-  signInWithEmailAndPassword,
+  signInWithPopup,
   User,
 } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
@@ -24,19 +22,19 @@ export async function ensureAnonymousSession(): Promise<User> {
   return cred.user;
 }
 
-export async function signInAdminWithEmailPassword(email: string, password: string): Promise<User> {
-  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+export async function signInOwnerForOneTimePasscodeSync(): Promise<User> {
+  if (
+    auth.currentUser &&
+    !auth.currentUser.isAnonymous &&
+    auth.currentUser.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() &&
+    auth.currentUser.emailVerified
+  ) {
+    return auth.currentUser;
+  }
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  const cred = await signInWithPopup(auth, provider);
   return cred.user;
-}
-
-export async function registerAdminWithEmailPassword(email: string, password: string): Promise<User> {
-  const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
-  await sendEmailVerification(cred.user);
-  return cred.user;
-}
-
-export async function sendAdminPasswordSetupEmail(email: string): Promise<void> {
-  await sendPasswordResetEmail(auth, email.trim());
 }
 
 export function formatFrontAuthError(err: unknown): string {
@@ -53,24 +51,17 @@ export function formatFrontAuthError(err: unknown): string {
 export function formatAdminAuthError(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err || '管理員登入失敗');
 
+  if (raw.includes('NEED_LEGACY_PASSCODE_SYNC')) {
+    return '系統已升級為「純手機號碼＋6 位數 PIN 碼」免彈窗登入。偵測到舊版管理員資料尚未同步登入索引，請點擊下方「一鍵同步現有管理員資料（只需執行一次）」即可完成啟用。';
+  }
   if (raw.includes('auth/operation-not-allowed') || raw.includes('auth/admin-restricted-operation')) {
-    return 'Firebase Authentication 尚未開啟「電子郵件／密碼（Email/Password）」登入功能。請前往 Firebase Console → Authentication → Sign-in method 開啟「Email/Password」後重試。';
+    return '系統尚未於 Firebase Console 開啟「匿名驗證（Anonymous）」連線方式，請先於 Firebase Console → Authentication → Sign-in method 開啟「Anonymous」。';
   }
-  if (
-    raw.includes('auth/invalid-credential') ||
-    raw.includes('auth/wrong-password') ||
-    raw.includes('auth/user-not-found')
-  ) {
-    return '管理員電郵或密碼不正確。若此信箱過去曾以 Google 登入過而尚未設定專屬密碼，請先點擊下方「寄送設定／重設密碼信」完成密碼設定。';
+  if (raw.includes('auth/popup-closed-by-user')) {
+    return '已取消一次性資料同步驗證視窗。';
   }
-  if (raw.includes('auth/email-already-in-use')) {
-    return '此電郵已在帳號系統中存在（可能曾使用 Google 驗證過），請切換為「電郵密碼登入」，或點擊「寄送設定／重設密碼信」來設定密碼。';
-  }
-  if (raw.includes('auth/weak-password')) {
-    return '密碼強度不足，請設定至少 6 個字元以上的密碼。';
-  }
-  if (raw.includes('auth/invalid-email')) {
-    return '管理員電郵格式不正確，請重新確認。';
+  if (raw.includes('auth/popup-blocked')) {
+    return '瀏覽器封鎖了同步授權視窗，請允許彈出視窗後再試一次。';
   }
   if (raw.includes('auth/too-many-requests')) {
     return '嘗試次數過多，請稍候幾分鐘後再試。';
@@ -79,20 +70,7 @@ export function formatAdminAuthError(err: unknown): string {
     return '網路連線暫時中斷，無法連線至驗證服務，請確認網路狀態後重試。';
   }
   if (raw.includes('Missing or insufficient permissions') || raw.includes('PERMISSION_DENIED')) {
-    if (auth.currentUser?.isAnonymous) {
-      return '目前為前台訪客匿名連線狀態，請先於上方輸入「管理員電郵與密碼」完成驗證後再登入後台。';
-    }
-    if (auth.currentUser && !auth.currentUser.emailVerified) {
-      return '您的管理員電郵尚未完成信箱驗證，請至信箱點擊驗證連結後，再按「我已完成驗證，重新檢查」。';
-    }
-    let signedEmail = auth.currentUser?.email || '';
-    try {
-      const parsed = JSON.parse(raw) as { authInfo?: { email?: string } };
-      if (parsed?.authInfo?.email) signedEmail = parsed.authInfo.email;
-    } catch {
-      // ignore non-JSON
-    }
-    return `目前登入的管理員帳號（${signedEmail || '未登入'}）尚無後台資料庫存取權限。請改用總監信箱「${SUPER_ADMIN_EMAIL}」或已綁定權限的管理員電郵登入。`;
+    return '管理員驗證尚未通過或帳號權限已變更，請重新確認手提電話與 6 位數 PIN 碼後再試。';
   }
   return raw;
 }

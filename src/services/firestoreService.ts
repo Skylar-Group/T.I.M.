@@ -22,6 +22,7 @@ import {
 import {
   auth,
   db,
+  ensureAnonymousSession,
   handleFirestoreError,
   hashPin,
   normalizePhone,
@@ -1434,6 +1435,40 @@ async function syncAdminEmailEntry(
   });
 }
 
+export async function checkAdminPasscodeSyncStatus(): Promise<boolean> {
+  try {
+    const snap = await getDoc(doc(db, 'system_meta', 'passcode_sync'));
+    return snap.exists() && snap.data()?.synced === true;
+  } catch {
+    return false;
+  }
+}
+
+export async function syncAllAdminPasscodes(): Promise<void> {
+  const path = 'admin_passcodes';
+  try {
+    const adminsSnap = await getDocs(collection(db, 'admin_users'));
+    const batch = writeBatch(db);
+    for (const d of adminsSnap.docs) {
+      const data = d.data() as Partial<AdminUser>;
+      if (data.pinHash && typeof data.pinHash === 'string' && data.pinHash.length >= 32) {
+        batch.set(doc(db, 'admin_passcodes', data.pinHash), {
+          adminUserId: d.id,
+          isActive: data.isActive !== false,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+    batch.set(doc(db, 'system_meta', 'passcode_sync'), {
+      synced: true,
+      updatedAt: serverTimestamp(),
+    });
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
 export async function saveAdminUser(params: {
   id?: string;
   phone: string;
@@ -1466,10 +1501,17 @@ export async function saveAdminUser(params: {
   const path = isEdit ? `admin_users/${params.id}` : 'admin_users';
   try {
     let previousEmail = '';
+    let previousPinHash = '';
     if (isEdit && params.id) {
       const prevSnap = await getDoc(doc(db, 'admin_users', params.id));
       if (prevSnap.exists()) {
-        previousEmail = String(prevSnap.data().boundEmail || '').trim().toLowerCase();
+        const prevData = prevSnap.data();
+        previousEmail = String(prevData.boundEmail || '').trim().toLowerCase();
+        previousPinHash = String(prevData.pinHash || '').trim();
+        const prevPhone = normalizePhone(String(prevData.phone || ''));
+        if (prevPhone && prevPhone !== phone && !(params.newPin && params.newPin.trim())) {
+          throw new Error('更改管理員登入電話號碼時，請同時輸入新的 6 位數 PIN 碼');
+        }
       }
     }
 
@@ -1506,8 +1548,25 @@ export async function saveAdminUser(params: {
     if (cleanBoundEmail) {
       await syncAdminEmailEntry(cleanBoundEmail, savedId, params.isActive);
     }
+
+    if (previousPinHash && previousPinHash !== pinHash) {
+      await deleteDoc(doc(db, 'admin_passcodes', previousPinHash)).catch(() => {});
+    }
+    await setDoc(doc(db, 'admin_passcodes', pinHash), {
+      adminUserId: savedId,
+      isActive: Boolean(params.isActive),
+      updatedAt: serverTimestamp(),
+    });
+    await setDoc(doc(db, 'system_meta', 'passcode_sync'), {
+      synced: true,
+      updatedAt: serverTimestamp(),
+    });
+
     return savedId;
   } catch (error) {
+    if (error instanceof Error && error.message.includes('更改管理員登入電話號碼')) {
+      throw error;
+    }
     handleFirestoreError(error, isEdit ? OperationType.UPDATE : OperationType.CREATE, path);
   }
 }
@@ -1517,9 +1576,13 @@ export async function deleteAdminUser(id: string): Promise<void> {
   try {
     const snap = await getDoc(doc(db, 'admin_users', id));
     const boundEmail = snap.exists() ? String(snap.data().boundEmail || '').trim().toLowerCase() : '';
+    const pinHash = snap.exists() ? String(snap.data().pinHash || '').trim() : '';
     await deleteDoc(doc(db, 'admin_users', id));
     if (boundEmail) {
       await deleteDoc(doc(db, 'admin_emails', toAdminEmailKey(boundEmail))).catch(() => {});
+    }
+    if (pinHash) {
+      await deleteDoc(doc(db, 'admin_passcodes', pinHash)).catch(() => {});
     }
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
@@ -1528,22 +1591,99 @@ export async function deleteAdminUser(id: string): Promise<void> {
 
 export async function loginAdminWithPhonePin(phoneInput: string, pin: string): Promise<AdminUser> {
   const phone = normalizePhone(phoneInput);
+  if (!/^[0-9+\-\s]{6,20}$/.test(phone)) {
+    throw new Error('請輸入正確的管理員手提電話號碼');
+  }
   if (!/^\d{6}$/.test(pin.trim())) {
     throw new Error('PIN 碼必須為 6 位數數字');
   }
-  const admins = await fetchAllAdminUsers();
-  const target = admins.find((a) => normalizePhone(a.phone) === phone);
-  if (!target) {
-    throw new Error('找不到此管理員手提電話帳號');
+
+  const user = await ensureAnonymousSession();
+  const uid = user.uid;
+  const pinHash = await hashPin(pin, phone);
+
+  const isVerifiedSuperAdmin =
+    !user.isAnonymous &&
+    user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() &&
+    user.emailVerified;
+
+  if (isVerifiedSuperAdmin) {
+    await seedDatabaseIfEmpty();
+    const admins = await fetchAllAdminUsers();
+    const target = admins.find((a) => normalizePhone(a.phone) === phone);
+    if (!target) {
+      throw new Error('找不到此管理員手提電話帳號');
+    }
+    if (!target.isActive) {
+      throw new Error('此管理員帳號已被停用');
+    }
+    if (pinHash !== target.pinHash) {
+      throw new Error('管理員 6 位數 PIN 碼不正確');
+    }
+    await setDoc(doc(db, 'admin_passcodes', pinHash), {
+      adminUserId: target.id,
+      isActive: Boolean(target.isActive),
+      updatedAt: serverTimestamp(),
+    });
+    await setDoc(doc(db, 'admin_identities', uid), {
+      uid,
+      email: user.email || '',
+      adminUserId: target.id,
+      credentialHash: pinHash,
+      createdAt: serverTimestamp(),
+    });
+    return target;
   }
-  if (!target.isActive) {
+
+  const passSnap = await getDoc(doc(db, 'admin_passcodes', pinHash));
+  if (!passSnap.exists()) {
+    const isSynced = await checkAdminPasscodeSyncStatus();
+    if (!isSynced) {
+      throw new Error('NEED_LEGACY_PASSCODE_SYNC');
+    }
+    throw new Error('管理員手提電話或 6 位數 PIN 碼不正確');
+  }
+
+  const passData = passSnap.data() as { adminUserId?: string; isActive?: boolean };
+  if (!passData.isActive || !passData.adminUserId) {
     throw new Error('此管理員帳號已被停用');
   }
-  const inputHash = await hashPin(pin, phone);
-  if (inputHash !== target.pinHash) {
+
+  const identityRef = doc(db, 'admin_identities', uid);
+  await setDoc(identityRef, {
+    uid,
+    email: user.email || '',
+    adminUserId: passData.adminUserId,
+    credentialHash: pinHash,
+    createdAt: serverTimestamp(),
+  });
+
+  const adminSnap = await getDoc(doc(db, 'admin_users', passData.adminUserId));
+  if (!adminSnap.exists()) {
+    await deleteDoc(identityRef).catch(() => {});
+    throw new Error('找不到對應的管理員帳號資料');
+  }
+
+  const target = {
+    id: adminSnap.id,
+    ...(adminSnap.data() as Omit<AdminUser, 'id'>),
+  };
+  if (!target.isActive) {
+    await deleteDoc(identityRef).catch(() => {});
+    throw new Error('此管理員帳號已被停用');
+  }
+  if (pinHash !== target.pinHash) {
+    await deleteDoc(identityRef).catch(() => {});
     throw new Error('管理員 6 位數 PIN 碼不正確');
   }
   return target;
+}
+
+export async function logoutAdminSession(): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (uid) {
+    await deleteDoc(doc(db, 'admin_identities', uid)).catch(() => {});
+  }
 }
 
 export async function changeOwnAdminPin(params: {
@@ -1552,8 +1692,8 @@ export async function changeOwnAdminPin(params: {
   newPin: string;
 }): Promise<string> {
   const user = auth.currentUser;
-  if (!user || !user.emailVerified || !user.email) {
-    throw new Error('請先完成 Google 管理員信箱驗證後再修改 PIN 碼');
+  if (!user) {
+    throw new Error('安全連線工作階段已失效，請重新登入後再修改 PIN 碼');
   }
 
   const currentPin = params.currentPin.trim();
@@ -1570,6 +1710,19 @@ export async function changeOwnAdminPin(params: {
 
   const path = `admin_users/${params.adminId}`;
   try {
+    const isVerifiedSuperAdmin =
+      !user.isAnonymous &&
+      user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() &&
+      user.emailVerified;
+
+    const identityRef = doc(db, 'admin_identities', user.uid);
+    const identitySnap = await getDoc(identityRef);
+    if (!isVerifiedSuperAdmin) {
+      if (!identitySnap.exists() || identitySnap.data()?.adminUserId !== params.adminId) {
+        throw new Error('目前登入的工作階段與此管理員帳號不符，請重新登入後再修改 PIN 碼');
+      }
+    }
+
     const ref = doc(db, 'admin_users', params.adminId);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
@@ -1578,12 +1731,6 @@ export async function changeOwnAdminPin(params: {
     const data = snap.data() as Omit<AdminUser, 'id'>;
     if (!data.isActive) {
       throw new Error('此管理員帳號已被停用，無法修改 PIN 碼');
-    }
-
-    const signedEmail = user.email.trim().toLowerCase();
-    const boundEmail = String(data.boundEmail || '').trim().toLowerCase();
-    if (boundEmail && signedEmail !== boundEmail && signedEmail !== SUPER_ADMIN_EMAIL.toLowerCase()) {
-      throw new Error('目前登入的 Google 帳號與此管理員綁定信箱不符，無法修改此帳號之 PIN 碼');
     }
 
     const currentHash = await hashPin(currentPin, data.phone);
@@ -1596,6 +1743,25 @@ export async function changeOwnAdminPin(params: {
       pinHash: newPinHash,
       updatedAt: serverTimestamp(),
     });
+
+    await setDoc(doc(db, 'admin_passcodes', newPinHash), {
+      adminUserId: params.adminId,
+      isActive: Boolean(data.isActive),
+      updatedAt: serverTimestamp(),
+    });
+    if (data.pinHash && data.pinHash !== newPinHash) {
+      await deleteDoc(doc(db, 'admin_passcodes', data.pinHash)).catch(() => {});
+    }
+    if (identitySnap.exists()) {
+      await setDoc(identityRef, {
+        uid: user.uid,
+        email: user.email || '',
+        adminUserId: params.adminId,
+        credentialHash: newPinHash,
+        createdAt: serverTimestamp(),
+      });
+    }
+
     return newPinHash;
   } catch (error) {
     if (
@@ -1603,7 +1769,7 @@ export async function changeOwnAdminPin(params: {
       (error.message.includes('PIN') ||
         error.message.includes('找不到') ||
         error.message.includes('停用') ||
-        error.message.includes('Google'))
+        error.message.includes('不符'))
     ) {
       throw error;
     }
@@ -1614,7 +1780,7 @@ export async function changeOwnAdminPin(params: {
 // Seed initial catalog + default Super Admin when owner first accesses database
 export async function seedDatabaseIfEmpty(): Promise<void> {
   const user = auth.currentUser;
-  if (!user || user.email !== SUPER_ADMIN_EMAIL || !user.emailVerified) return;
+  if (!user || user.email?.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase() || !user.emailVerified) return;
 
   try {
     const siteSnap = await getDoc(doc(db, 'site_content', 'published'));
@@ -1692,6 +1858,8 @@ export async function seedDatabaseIfEmpty(): Promise<void> {
         }
       }
     }
+
+    await syncAllAdminPasscodes();
   } catch (error) {
     console.warn('Initial seed check skipped or partial:', error);
   }
