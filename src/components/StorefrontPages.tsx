@@ -9,8 +9,7 @@ import {
   Send,
   Users,
 } from 'lucide-react';
-import { auth, googleProvider } from '../lib/firebase';
-import { signInWithPopup } from 'firebase/auth';
+import { ensureAnonymousSession, formatFrontAuthError } from '../lib/firebase';
 import { createContactSubmission } from '../services/firestoreService';
 import {
   Artisan,
@@ -217,9 +216,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
     }
     setContactSubmitting(true);
     try {
-      if (!auth.currentUser) {
-        await signInWithPopup(auth, googleProvider);
-      }
+      await ensureAnonymousSession();
       await createContactSubmission({
         name: showInquiryName ? contactForm.name.trim() : '（未公開欄位）',
         phone: showInquiryPhone ? contactForm.phone.trim() : '（未公開欄位）',
@@ -236,7 +233,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
         message: '',
       });
     } catch (err) {
-      setContactError(err instanceof Error ? err.message : '表單送出失敗，請稍後再試');
+      setContactError(formatFrontAuthError(err));
     } finally {
       setContactSubmitting(false);
     }

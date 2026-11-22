@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Bell, Check, FileText, LogOut, ShieldCheck, Upload, User } from 'lucide-react';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../lib/firebase';
+import { ensureAnonymousSession, formatFrontAuthError } from '../lib/firebase';
 import {
   fetchEnrollmentsByMember,
   fetchNotificationsByMember,
@@ -112,16 +111,14 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
     setAuthError('');
     setAuthLoading(true);
     try {
-      if (!auth.currentUser) {
-        await signInWithPopup(auth, googleProvider);
-      }
+      await ensureAnonymousSession();
       const member =
         authTab === 'register'
           ? await registerMemberWithPhonePin({ phone, pin, name, email })
           : await loginMemberWithPhonePin(phone, pin);
       onMemberLogin(member);
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : '操作失敗');
+      setAuthError(formatFrontAuthError(err));
     } finally {
       setAuthLoading(false);
     }
@@ -281,12 +278,6 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
             </label>
 
             {authError && <p className="text-xs text-[#ba1a1a]">{authError}</p>}
-
-            {!firebaseReady && (
-              <p className="text-xs text-[#73594c] bg-[#f6f3f2] p-3 rounded-lg border border-[#e0d8d3]">
-                首次登入將先開啟一次安全瀏覽器驗證，確保您的個人報名與 PIN 碼資料受雲端加密保護。
-              </p>
-            )}
 
             <button
               type="submit"

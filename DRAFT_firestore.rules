@@ -379,9 +379,9 @@ service cloud.firestore {
 
     // Uploaded images stored directly in Firestore
     match /media_assets/{assetId} {
-      allow get: if isValidId(assetId) && (existing().isPublic == true || isAdmin() || (isVerifiedUser() && existing().uploadedByUid == request.auth.uid));
-      allow list: if isAdmin() || resource.data.isPublic == true || (isVerifiedUser() && resource.data.uploadedByUid == request.auth.uid);
-      allow create: if isValidId(assetId) && isVerifiedUser() && isValidMediaAsset(incoming()) && (isAdmin() || (incoming().isPublic == false && incoming().category == 'receipt'));
+      allow get: if isValidId(assetId) && (existing().isPublic == true || isAdmin() || (isSignedIn() && existing().uploadedByUid == request.auth.uid));
+      allow list: if isAdmin() || resource.data.isPublic == true || (isSignedIn() && resource.data.uploadedByUid == request.auth.uid);
+      allow create: if isValidId(assetId) && isSignedIn() && isValidMediaAsset(incoming()) && (isAdmin() || (incoming().isPublic == false && incoming().category == 'receipt'));
       allow update: if isValidId(assetId) && isAdmin() && isValidMediaAsset(incoming()) && incoming().createdAt == existing().createdAt;
       allow delete: if isValidId(assetId) && isAdmin();
     }
@@ -415,10 +415,10 @@ service cloud.firestore {
 
     // Student members (PII protected)
     match /members/{memberId} {
-      allow get: if isValidId(memberId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
-      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
-      allow create: if isValidId(memberId) && isVerifiedUser() && isValidMember(incoming()) && incoming().createdAt == request.time && (isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().status == 'active'));
-      allow update: if isValidId(memberId) && isVerifiedUser() && isValidMember(incoming()) && incoming().createdAt == existing().createdAt && (
+      allow get: if isValidId(memberId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(memberId) && isSignedIn() && isValidMember(incoming()) && incoming().createdAt == request.time && (isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().status == 'active'));
+      allow update: if isValidId(memberId) && isSignedIn() && isValidMember(incoming()) && incoming().createdAt == existing().createdAt && (
         isAdmin() || (
           existing().ownerUid == request.auth.uid &&
           incoming().ownerUid == existing().ownerUid &&
@@ -431,9 +431,9 @@ service cloud.firestore {
 
     // Course enrollments and payment verification
     match /enrollments/{enrollmentId} {
-      allow get: if isValidId(enrollmentId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
-      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
-      allow create: if isValidId(enrollmentId) && isVerifiedUser() && isValidEnrollment(incoming()) && incoming().createdAt == request.time &&
+      allow get: if isValidId(enrollmentId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(enrollmentId) && isSignedIn() && isValidEnrollment(incoming()) && incoming().createdAt == request.time &&
         exists(/databases/$(database)/documents/courses/$(incoming().courseId)) &&
         exists(/databases/$(database)/documents/members/$(incoming().memberId)) && (
           isAdmin() || (
@@ -446,7 +446,7 @@ service cloud.firestore {
             )
           )
         );
-      allow update: if isValidId(enrollmentId) && isVerifiedUser() && isValidEnrollment(incoming()) && incoming().createdAt == existing().createdAt && (
+      allow update: if isValidId(enrollmentId) && isSignedIn() && isValidEnrollment(incoming()) && incoming().createdAt == existing().createdAt && (
         isAdmin() || (
           existing().ownerUid == request.auth.uid &&
           existing().paymentStatus != 'cancelled' &&
@@ -465,12 +465,12 @@ service cloud.firestore {
 
     // Member notifications
     match /notifications/{notificationId} {
-      allow get: if isValidId(notificationId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
-      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
-      allow create: if isValidId(notificationId) && isVerifiedUser() && isValidNotification(incoming()) && incoming().createdAt == request.time && (
+      allow get: if isValidId(notificationId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(notificationId) && isSignedIn() && isValidNotification(incoming()) && incoming().createdAt == request.time && (
         isAdmin() || (incoming().ownerUid == request.auth.uid && incoming().type == 'enrollment_created' && incoming().isRead == false)
       );
-      allow update: if isValidId(notificationId) && isVerifiedUser() && isValidNotification(incoming()) && incoming().createdAt == existing().createdAt && (
+      allow update: if isValidId(notificationId) && isSignedIn() && isValidNotification(incoming()) && incoming().createdAt == existing().createdAt && (
         isAdmin() || (
           existing().ownerUid == request.auth.uid &&
           incoming().ownerUid == existing().ownerUid &&
@@ -483,9 +483,9 @@ service cloud.firestore {
 
     // Visitor contact and booking inquiries
     match /contact_submissions/{submissionId} {
-      allow get: if isValidId(submissionId) && (isAdmin() || (isVerifiedUser() && existing().ownerUid == request.auth.uid));
-      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerUid == request.auth.uid);
-      allow create: if isValidId(submissionId) && isVerifiedUser() && isValidContactSubmission(incoming()) && incoming().createdAt == request.time && incoming().status == 'new' && incoming().adminReplyNote == '';
+      allow get: if isValidId(submissionId) && (isAdmin() || (isSignedIn() && existing().ownerUid == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create: if isValidId(submissionId) && isSignedIn() && isValidContactSubmission(incoming()) && incoming().createdAt == request.time && incoming().status == 'new' && incoming().adminReplyNote == '';
       allow update: if isValidId(submissionId) && isAdmin() && isValidContactSubmission(incoming()) && incoming().createdAt == existing().createdAt;
       allow delete: if isValidId(submissionId) && isAdmin();
     }

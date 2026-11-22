@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { CheckCircle2, CreditCard, Landmark, Upload, X } from 'lucide-react';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../lib/firebase';
+import { ensureAnonymousSession, formatFrontAuthError } from '../lib/firebase';
 import {
   createEnrollmentAndNotify,
   loginMemberWithPhonePin,
@@ -73,9 +72,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   const totalAmount = course.price * seats;
 
   const ensureFirebaseSession = async () => {
-    if (!auth.currentUser) {
-      await signInWithPopup(auth, googleProvider);
-    }
+    await ensureAnonymousSession();
   };
 
   const handleMemberAuth = async (e: React.FormEvent) => {
@@ -90,7 +87,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
           : await loginMemberWithPhonePin(phone, pin);
       onMemberAuthenticated(member);
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : '驗證失敗');
+      setAuthError(formatFrontAuthError(err));
     } finally {
       setAuthLoading(false);
     }
@@ -286,11 +283,6 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                 </div>
 
                 {authError && <p className="text-xs text-[#ba1a1a]">{authError}</p>}
-                {!firebaseReady && (
-                  <p className="text-xs text-[#73594c]">
-                    點擊確認時將先啟動一次安全工作階段驗證以保護您的會員資料庫存取。
-                  </p>
-                )}
 
                 <button
                   type="submit"

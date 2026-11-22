@@ -22,11 +22,18 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  sendEmailVerification,
+  signOut,
+  User,
+} from 'firebase/auth';
 import {
   auth,
   formatAdminAuthError,
-  signInWithGoogleSelectAccount,
+  registerAdminWithEmailPassword,
+  sendAdminPasswordSetupEmail,
+  signInAdminWithEmailPassword,
   SUPER_ADMIN_EMAIL,
 } from '../lib/firebase';
 import {
@@ -174,10 +181,15 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
 }) => {
   const [activeAdmin, setActiveAdmin] = useState<AdminUser | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(() => auth.currentUser);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [emailAuthMode, setEmailAuthMode] = useState<'signin' | 'register'>('signin');
+  const [, setEmailVerifyRefreshCount] = useState(0);
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPin, setLoginPin] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [loginNotice, setLoginNotice] = useState('');
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -322,12 +334,27 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
     }
   }, [activeAdmin?.id]);
 
-  const handleGoogleSwitchAccount = async () => {
+  const handleAdminEmailSignOut = async () => {
     setLoginError('');
+    setLoginNotice('');
+    await signOut(auth);
+    setFirebaseUser(null);
+  };
+
+  const handleSendPasswordSetup = async () => {
+    setLoginError('');
+    setLoginNotice('');
+    const targetEmail = adminEmail.trim() || firebaseUser?.email || '';
+    if (!targetEmail || !targetEmail.includes('@')) {
+      setLoginError('請先輸入要設定或重設密碼的管理員電郵');
+      return;
+    }
     setLoginLoading(true);
     try {
-      const user = await signInWithGoogleSelectAccount();
-      setFirebaseUser(user);
+      await sendAdminPasswordSetupEmail(targetEmail);
+      setLoginNotice(
+        `已寄出「設定／重設密碼」信件至 ${targetEmail}。請前往信箱點擊連結完成密碼設定後，即可直接在此輸入電郵與密碼登入。`
+      );
     } catch (err) {
       setLoginError(formatAdminAuthError(err));
     } finally {
@@ -335,25 +362,93 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
     }
   };
 
-  const handleGoogleSignOut = async () => {
+  const handleCheckEmailVerification = async () => {
     setLoginError('');
-    await signOut(auth);
-    setFirebaseUser(null);
+    setLoginNotice('');
+    if (!auth.currentUser) return;
+    setLoginLoading(true);
+    try {
+      await auth.currentUser.reload();
+      await auth.currentUser.getIdToken(true);
+      setFirebaseUser(auth.currentUser);
+      setEmailVerifyRefreshCount((c) => c + 1);
+      if (auth.currentUser.emailVerified) {
+        setLoginNotice('管理員電郵驗證成功！現在請輸入手提電話與 6 位數 PIN 碼登入後台。');
+      } else {
+        setLoginError('系統偵測此電郵尚未完成驗證，請先至信箱點擊驗證連結（亦請檢查垃圾郵件匣）。');
+      }
+    } catch (err) {
+      setLoginError(formatAdminAuthError(err));
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setLoginError('');
+    setLoginNotice('');
+    if (!auth.currentUser) return;
+    setLoginLoading(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setLoginNotice(`已重新寄出信箱驗證信至 ${auth.currentUser.email}，請點擊信中連結完成驗證。`);
+    } catch (err) {
+      setLoginError(formatAdminAuthError(err));
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setLoginNotice('');
     setLoginLoading(true);
     try {
-      if (!auth.currentUser) {
-        const user = await signInWithGoogleSelectAccount();
-        setFirebaseUser(user);
+      let currentUser = auth.currentUser;
+      const isVerifiedAdminEmail = Boolean(
+        currentUser && !currentUser.isAnonymous && currentUser.email && currentUser.emailVerified
+      );
+
+      if (!isVerifiedAdminEmail) {
+        if (currentUser && !currentUser.isAnonymous && currentUser.email && !currentUser.emailVerified) {
+          await currentUser.reload();
+          await currentUser.getIdToken(true);
+          setFirebaseUser(auth.currentUser);
+          setEmailVerifyRefreshCount((c) => c + 1);
+          if (!auth.currentUser?.emailVerified) {
+            setLoginError('請先完成管理員信箱驗證，點擊信中驗證連結後再按「我已完成驗證，重新檢查」。');
+            return;
+          }
+          currentUser = auth.currentUser;
+        } else {
+          if (!adminEmail.trim() || !adminPassword) {
+            setLoginError('請輸入管理員電郵與密碼以進行免彈窗安全驗證');
+            return;
+          }
+          if (emailAuthMode === 'register') {
+            const newUser = await registerAdminWithEmailPassword(adminEmail, adminPassword);
+            setFirebaseUser(newUser);
+            setLoginNotice(
+              `已為 ${adminEmail.trim()} 建立帳號並寄出信箱驗證信。請點擊信中驗證連結後，再按「我已完成驗證，重新檢查」。`
+            );
+            return;
+          }
+          const signedUser = await signInAdminWithEmailPassword(adminEmail, adminPassword);
+          await signedUser.getIdToken(true);
+          setFirebaseUser(signedUser);
+          if (!signedUser.emailVerified) {
+            setLoginError('此管理員帳號尚未完成信箱驗證，請先至信箱點擊驗證連結（或點擊重寄驗證信）。');
+            return;
+          }
+        }
       }
+
       await seedDatabaseIfEmpty();
       const admin = await loginAdminWithPhonePin(loginPhone, loginPin);
       setActiveAdmin(admin);
       setLoginPin('');
+      setAdminPassword('');
     } catch (err) {
       setLoginError(formatAdminAuthError(err));
     } finally {
@@ -427,6 +522,13 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
   };
 
   if (!activeAdmin) {
+    const hasVerifiedAdminSession = Boolean(
+      firebaseUser && !firebaseUser.isAnonymous && firebaseUser.email && firebaseUser.emailVerified
+    );
+    const hasUnverifiedEmailSession = Boolean(
+      firebaseUser && !firebaseUser.isAnonymous && firebaseUser.email && !firebaseUser.emailVerified
+    );
+
     return (
       <div className="min-h-screen bg-[#fcf9f8] flex items-center justify-center p-5">
         <div className="max-w-md w-full bg-white border border-[#e0d8d3] rounded-lg p-8 shadow-warm space-y-6">
@@ -439,88 +541,191 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
               <ArrowLeft className="w-4 h-4" />
               返回前台網站
             </button>
-            <span className="text-xs text-[#73594c]">管理員安全工作台</span>
+            <span className="text-xs text-[#73594c]">管理員安全工作台（免彈窗）</span>
           </div>
 
           <div className="space-y-2">
             <h1 className="text-2xl font-serif text-[#1b1c1c]">工坊後台管理系統登入</h1>
             <p className="text-sm text-[#51443d]">
-              請先完成 Google 管理員信箱驗證，再輸入管理員手提電話號碼與 6 位數數字 PIN 碼登入。
+              全程直接於頁面內輸入驗證，不會彈出任何外部視窗。請以授權電郵密碼搭配管理員電話與 6 位數 PIN 碼登入。
             </p>
           </div>
 
-          <div className="bg-[#f6f3f2] border border-[#e0d8d3] rounded-lg p-4 text-xs text-[#51443d] space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium text-[#70472d]">Google 安全驗證狀態</span>
-              <span
-                className={`font-medium ${
-                  firebaseUser?.email ? 'text-[#70472d]' : 'text-[#b0704c]'
-                }`}
-              >
-                {firebaseUser?.email ? '已驗證帳號' : '尚未驗證'}
-              </span>
-            </div>
-            {firebaseUser?.email ? (
-              <p className="text-[#1b1c1c] break-all">
-                目前帳號：<strong>{firebaseUser.email}</strong>
-                {firebaseUser.email !== SUPER_ADMIN_EMAIL && (
-                  <span className="block text-[11px] text-[#73594c] mt-0.5">
-                    若非已綁定管理權限的信箱，請切換為總監信箱 {SUPER_ADMIN_EMAIL}
-                  </span>
-                )}
-              </p>
-            ) : (
-              <p>
-                請使用總監信箱 <span className="font-medium">{SUPER_ADMIN_EMAIL}</span> 或已授權的管理員 Google 帳號進行驗證。預設超級管理員電話 <strong className="tabular-nums">0900000000</strong>、PIN <strong className="tabular-nums">000000</strong>。
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <button
-                type="button"
-                disabled={loginLoading}
-                onClick={() => void handleGoogleSwitchAccount()}
-                className="px-3 h-8 rounded-lg bg-white border border-[#e0d8d3] text-xs font-medium text-[#70472d] hover:bg-[#e8ded8]/60 cursor-pointer disabled:opacity-50"
-              >
-                {firebaseUser ? '切換 Google 帳號' : '立即進行 Google 驗證'}
-              </button>
-              {firebaseUser && (
-                <button
-                  type="button"
-                  disabled={loginLoading}
-                  onClick={() => void handleGoogleSignOut()}
-                  className="px-3 h-8 rounded-lg border border-[#e0d8d3] text-xs text-[#51443d] hover:bg-white cursor-pointer disabled:opacity-50"
-                >
-                  登出 Google
-                </button>
-              )}
-            </div>
-          </div>
-
           <form onSubmit={handleAdminLogin} className="space-y-4">
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-[#51443d]">管理員手提電話號碼</span>
-              <input
-                type="tel"
-                required
-                value={loginPhone}
-                onChange={(e) => setLoginPhone(e.target.value)}
-                placeholder="0900000000"
-                className="w-full h-12 px-4 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43] tabular-nums"
-              />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-[#51443d]">6 位數數字 PIN 碼</span>
-              <input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                required
-                value={loginPin}
-                onChange={(e) => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="輸入 6 位數字"
-                className="w-full h-12 px-4 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43] tracking-[0.25em] tabular-nums"
-              />
-            </label>
+            {hasVerifiedAdminSession ? (
+              <div className="bg-[#f6f3f2] border border-[#e0d8d3] rounded-lg p-4 text-xs text-[#51443d] space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-[#70472d]">步驟 1：管理員電郵安全驗證</span>
+                  <span className="font-medium text-[#70472d]">已記住並驗證</span>
+                </div>
+                <p className="text-[#1b1c1c] break-all">
+                  目前驗證電郵：<strong>{firebaseUser?.email}</strong>
+                </p>
+                <div className="pt-0.5">
+                  <button
+                    type="button"
+                    disabled={loginLoading}
+                    onClick={() => void handleAdminEmailSignOut()}
+                    className="px-3 h-8 rounded-lg bg-white border border-[#e0d8d3] text-xs text-[#51443d] hover:bg-[#e8ded8]/60 cursor-pointer disabled:opacity-50"
+                  >
+                    切換其他管理員電郵 / 登出
+                  </button>
+                </div>
+              </div>
+            ) : hasUnverifiedEmailSession ? (
+              <div className="bg-[#f6f3f2] border border-[#8c5e43]/40 rounded-lg p-4 text-xs text-[#51443d] space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-[#70472d]">步驟 1：待完成信箱連結驗證</span>
+                  <span className="font-medium text-[#b0704c]">待驗證</span>
+                </div>
+                <p className="text-[#1b1c1c] break-all">
+                  已建立帳號：<strong>{firebaseUser?.email}</strong>。請至信箱點擊驗證連結後再按下方按鈕。
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={loginLoading}
+                    onClick={() => void handleCheckEmailVerification()}
+                    className="px-3 h-8 rounded-lg bg-[#8c5e43] text-white text-xs font-medium hover:bg-[#73594c] cursor-pointer disabled:opacity-50"
+                  >
+                    我已完成驗證，重新檢查
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loginLoading}
+                    onClick={() => void handleResendVerification()}
+                    className="px-3 h-8 rounded-lg bg-white border border-[#e0d8d3] text-xs text-[#70472d] hover:bg-[#e8ded8]/60 cursor-pointer disabled:opacity-50"
+                  >
+                    重寄驗證信
+                  </button>
+                  <button
+                    type="button"
+                    disabled={loginLoading}
+                    onClick={() => void handleAdminEmailSignOut()}
+                    className="px-3 h-8 rounded-lg border border-[#e0d8d3] text-xs text-[#51443d] hover:bg-white cursor-pointer disabled:opacity-50"
+                  >
+                    更換電郵
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#f6f3f2] border border-[#e0d8d3] rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-[#70472d]">
+                    步驟 1：管理員電郵與密碼（免彈窗，登入一次即可記住）
+                  </span>
+                </div>
+
+                <div className="flex gap-1.5 p-1 bg-white rounded-lg border border-[#e0d8d3]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailAuthMode('signin');
+                      setLoginError('');
+                      setLoginNotice('');
+                    }}
+                    className={`flex-1 h-8 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                      emailAuthMode === 'signin'
+                        ? 'bg-[#8c5e43] text-white'
+                        : 'text-[#51443d] hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    電郵密碼登入
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailAuthMode('register');
+                      setLoginError('');
+                      setLoginNotice('');
+                    }}
+                    className={`flex-1 h-8 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                      emailAuthMode === 'register'
+                        ? 'bg-[#8c5e43] text-white'
+                        : 'text-[#51443d] hover:bg-[#f6f3f2]'
+                    }`}
+                  >
+                    新員工首次啟用密碼
+                  </button>
+                </div>
+
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-[#51443d]">管理員電郵 *</span>
+                  <input
+                    type="email"
+                    required
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder={SUPER_ADMIN_EMAIL}
+                    className="w-full h-11 px-3.5 rounded-lg bg-white border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43]"
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-[#51443d]">
+                    {emailAuthMode === 'register' ? '設定管理員電郵密碼（至少 6 字元）*' : '管理員電郵密碼 *'}
+                  </span>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="輸入電郵登入密碼"
+                    className="w-full h-11 px-3.5 rounded-lg bg-white border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43]"
+                  />
+                </label>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#73594c]">
+                  <button
+                    type="button"
+                    disabled={loginLoading}
+                    onClick={() => void handleSendPasswordSetup()}
+                    className="underline underline-offset-2 text-[#70472d] hover:text-[#1b1c1c] cursor-pointer disabled:opacity-50"
+                  >
+                    首次設定 / 忘記密碼？寄送設定密碼信至信箱
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {emailAuthMode === 'signin' && !hasUnverifiedEmailSession && (
+              <div className="space-y-3 pt-1">
+                <p className="text-xs font-medium text-[#70472d]">
+                  步驟 2：管理員手提電話與 6 位數 PIN 碼
+                </p>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-[#51443d]">管理員手提電話號碼 *</span>
+                  <input
+                    type="tel"
+                    required
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value)}
+                    placeholder="0900000000"
+                    className="w-full h-12 px-4 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43] tabular-nums"
+                  />
+                </label>
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-medium text-[#51443d]">6 位數數字 PIN 碼 *</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    required
+                    value={loginPin}
+                    onChange={(e) => setLoginPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="輸入 6 位數字"
+                    className="w-full h-12 px-4 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43] tracking-[0.25em] tabular-nums"
+                  />
+                </label>
+              </div>
+            )}
+
+            {loginNotice && (
+              <div className="p-3 rounded-lg bg-[#e8ded8]/60 border border-[#8c5e43]/40 text-xs text-[#70472d] leading-relaxed">
+                {loginNotice}
+              </div>
+            )}
 
             {loginError && (
               <div className="p-3 rounded-lg bg-[#ffdad6]/60 border border-[#ba1a1a]/30 text-xs text-[#93000a] leading-relaxed">
@@ -528,13 +733,19 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="w-full h-12 rounded-lg bg-[#8c5e43] text-white text-sm font-medium hover:bg-[#73594c] transition-colors cursor-pointer disabled:opacity-50"
-            >
-              {loginLoading ? '驗證授權中...' : '登入後台管理系統'}
-            </button>
+            {!hasUnverifiedEmailSession && (
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full h-12 rounded-lg bg-[#8c5e43] text-white text-sm font-medium hover:bg-[#73594c] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {loginLoading
+                  ? '驗證授權中...'
+                  : emailAuthMode === 'register' && !hasVerifiedAdminSession
+                  ? '建立電郵密碼並寄送驗證信'
+                  : '登入後台管理系統'}
+              </button>
+            )}
           </form>
         </div>
       </div>
