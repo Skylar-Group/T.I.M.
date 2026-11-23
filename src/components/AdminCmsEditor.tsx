@@ -9,6 +9,8 @@ import {
   AdminUser,
   CmsRevision,
   CustomBlock,
+  HERO_KICKER_SIZE_CLASS,
+  HERO_KICKER_SIZE_OPTIONS,
   HeroSlide,
   isFieldVisible,
   MediaAsset,
@@ -553,6 +555,60 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                   })
                 }
               />
+            </div>
+
+            {/* Kicker Font Size Control & Live Preview */}
+            <div className="bg-[#fcf9f8] border border-[#e0d8d3] rounded-lg p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-medium text-[#51443d]">
+                  前導小標（留白標語）字體大小設定
+                </span>
+                <span className="text-[11px] text-[#73594c]">
+                  目前尺寸：
+                  {HERO_KICKER_SIZE_OPTIONS.find(
+                    (o) => o.value === (draft.hero.kickerSize || 'xs')
+                  )?.label || '極小（預設）'}{' '}
+                  (
+                  {HERO_KICKER_SIZE_OPTIONS.find(
+                    (o) => o.value === (draft.hero.kickerSize || 'xs')
+                  )?.px || '12px'}
+                  )
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {HERO_KICKER_SIZE_OPTIONS.map((opt) => {
+                  const active = (draft.hero.kickerSize || 'xs') === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          hero: { ...draft.hero, kickerSize: opt.value },
+                        })
+                      }
+                      className={`px-3 h-9 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                        active
+                          ? 'bg-[#8c5e43] border-[#8c5e43] text-white'
+                          : 'bg-white border-[#e0d8d3] text-[#51443d] hover:bg-[#e8ded8]/60'
+                      }`}
+                    >
+                      {opt.label} · {opt.px}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="bg-white border border-[#e0d8d3] rounded-lg px-4 py-3">
+                <span className="block text-[11px] text-[#73594c] mb-1">前台實際字級預覽：</span>
+                <p
+                  className={`${
+                    HERO_KICKER_SIZE_CLASS[draft.hero.kickerSize || 'xs']
+                  } font-medium tracking-[0.08em] text-[#73594c] break-words`}
+                >
+                  {draft.hero.kicker || '前導小標（留白標語）預覽文字'}
+                </p>
+              </div>
             </div>
 
             <TextFieldWithVisibility

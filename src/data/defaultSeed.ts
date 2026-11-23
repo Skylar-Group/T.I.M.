@@ -25,6 +25,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
   hero: {
     isVisible: true,
     kicker: '台北赤峰街手造生活美學空間',
+    kickerSize: 'xs',
     title: '在泥土與木紋的呼吸之間，找回專注雙手的寧靜節奏',
     subtitle:
       '融合日式「間 Ma」的留白美學與北歐溫潤機能工藝，我們提供小班制陶藝拉坯、木工車旋與茶道具手作體驗，讓器物陪伴日常慢活。',

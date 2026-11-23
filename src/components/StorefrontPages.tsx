@@ -17,6 +17,7 @@ import {
   CourseStatus,
   CustomBlock,
   GalleryWork,
+  HERO_KICKER_SIZE_CLASS,
   isFieldVisible,
   PublicPageKey,
   SiteContent,
@@ -443,7 +444,11 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               <div className="lg:col-span-6 flex flex-col justify-center space-y-6 py-4">
                 {isFieldVisible(siteContent.hero.fieldVisibility, 'kicker') &&
                   siteContent.hero.kicker && (
-                    <p className="text-xs font-medium tracking-[0.08em] text-[#73594c]">
+                    <p
+                      className={`${
+                        HERO_KICKER_SIZE_CLASS[siteContent.hero.kickerSize || 'xs']
+                      } font-medium tracking-[0.08em] text-[#73594c]`}
+                    >
                       {siteContent.hero.kicker}
                     </p>
                   )}

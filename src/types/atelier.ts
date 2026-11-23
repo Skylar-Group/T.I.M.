@@ -47,6 +47,28 @@ export interface HeroSlide {
   order: number;
 }
 
+export type HeroKickerSize = 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl';
+
+export const HERO_KICKER_SIZE_CLASS: Record<HeroKickerSize, string> = {
+  xs: 'text-xs',
+  sm: 'text-sm',
+  base: 'text-base',
+  lg: 'text-lg',
+  xl: 'text-xl',
+  '2xl': 'text-xl md:text-2xl',
+  '3xl': 'text-2xl md:text-3xl',
+};
+
+export const HERO_KICKER_SIZE_OPTIONS: Array<{ value: HeroKickerSize; label: string; px: string }> = [
+  { value: 'xs', label: '極小（預設）', px: '12px' },
+  { value: 'sm', label: '小型', px: '14px' },
+  { value: 'base', label: '標準', px: '16px' },
+  { value: 'lg', label: '中大', px: '18px' },
+  { value: 'xl', label: '放大', px: '20px' },
+  { value: '2xl', label: '特大', px: '24px' },
+  { value: '3xl', label: '醒目', px: '30px' },
+];
+
 export interface SiteContent {
   brandName: string;
   brandVisible: boolean;
@@ -56,6 +78,7 @@ export interface SiteContent {
   hero: {
     isVisible: boolean;
     kicker: string;
+    kickerSize?: HeroKickerSize;
     title: string;
     subtitle: string;
     ctaText: string;

@@ -39,6 +39,8 @@ import {
   CourseStatus,
   Enrollment,
   GalleryWork,
+  HERO_KICKER_SIZE_CLASS,
+  HeroKickerSize,
   InstructorAttendanceStatus,
   InstructorSessionRecord,
   MediaAsset,
@@ -485,6 +487,10 @@ export async function fetchSiteContent(): Promise<SiteContent> {
       hero: {
         ...DEFAULT_SITE_CONTENT.hero,
         ...(rawHero || {}),
+        kickerSize:
+          rawHero?.kickerSize && rawHero.kickerSize in HERO_KICKER_SIZE_CLASS
+            ? (rawHero.kickerSize as HeroKickerSize)
+            : 'xs',
         slides: hydratedSlides,
         slideAutoPlay: rawHero?.slideAutoPlay ?? true,
         slideIntervalSec: rawHero?.slideIntervalSec ?? 5,
@@ -509,6 +515,9 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
       }))
     : [];
   const firstVisibleSlide = cleanSlides.find((s) => s.isVisible && s.imageUrl) || cleanSlides[0];
+  const rawKickerSize = content.hero.kickerSize;
+  const cleanKickerSize: HeroKickerSize =
+    rawKickerSize && rawKickerSize in HERO_KICKER_SIZE_CLASS ? rawKickerSize : 'xs';
 
   return {
     brandName: content.brandName,
@@ -518,6 +527,7 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
     navItems: content.navItems,
     hero: {
       ...content.hero,
+      kickerSize: cleanKickerSize,
       imageUrl: (firstVisibleSlide?.imageUrl || content.hero.imageUrl || '').slice(0, 300),
       slides: cleanSlides,
       slideAutoPlay: content.hero.slideAutoPlay ?? true,
