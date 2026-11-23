@@ -525,8 +525,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TextFieldWithVisibility
+              <TextAreaFieldWithVisibility
                 label="前導小標（留白標語）"
+                rows={2}
                 value={draft.hero.kicker}
                 onChange={(val) => setDraft({ ...draft, hero: { ...draft.hero, kicker: val } })}
                 visible={isFieldVisible(draft.hero.fieldVisibility, 'kicker')}
@@ -604,15 +605,16 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                 <p
                   className={`${
                     HERO_KICKER_SIZE_CLASS[draft.hero.kickerSize || 'xs']
-                  } font-medium tracking-[0.08em] text-[#73594c] break-words`}
+                  } font-medium tracking-[0.08em] text-[#73594c] break-words whitespace-pre-line`}
                 >
                   {draft.hero.kicker || '前導小標（留白標語）預覽文字'}
                 </p>
               </div>
             </div>
 
-            <TextFieldWithVisibility
+            <TextAreaFieldWithVisibility
               label="首頁主標題"
+              rows={2}
               value={draft.hero.title}
               onChange={(val) => setDraft({ ...draft, hero: { ...draft.hero, title: val } })}
               visible={isFieldVisible(draft.hero.fieldVisibility, 'title')}
@@ -786,8 +788,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                         onUploaded={onMediaUploaded}
                       />
 
-                      <TextFieldWithVisibility
+                      <TextAreaFieldWithVisibility
                         compact
+                        rows={2}
                         label={`幻燈片 #${idx + 1} 圖片底部說明文字（選填）`}
                         value={slide.caption || ''}
                         placeholder="輸入此張圖片簡短介紹或活動提示（可留空）"
@@ -837,8 +840,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TextFieldWithVisibility
+              <TextAreaFieldWithVisibility
                 label="副標題"
+                rows={2}
                 value={draft.philosophy.subtitle}
                 onChange={(val) =>
                   setDraft({
@@ -1092,8 +1096,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                   })
                 }
               />
-              <TextFieldWithVisibility
+              <TextAreaFieldWithVisibility
                 label="課程區塊說明文字"
+                rows={2}
                 value={draft.coursesSection.subtitle}
                 placeholder="課程區塊說明"
                 onChange={(val) =>
@@ -1116,8 +1121,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                   })
                 }
               />
-              <TextFieldWithVisibility
+              <TextAreaFieldWithVisibility
                 label="篩選無課程時之提示文字"
+                rows={2}
                 value={draft.coursesSection.emptyText}
                 placeholder="無課程時提示文字"
                 onChange={(val) =>
@@ -1179,8 +1185,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                   })
                 }
               />
-              <TextFieldWithVisibility
+              <TextAreaFieldWithVisibility
                 label="藝廊區塊說明文字"
+                rows={2}
                 value={draft.gallerySection.subtitle}
                 onChange={(val) =>
                   setDraft({
@@ -1241,8 +1248,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                   })
                 }
               />
-              <TextFieldWithVisibility
+              <TextAreaFieldWithVisibility
                 label="職人區塊說明文字"
+                rows={2}
                 value={draft.artisansSection.subtitle}
                 onChange={(val) =>
                   setDraft({
@@ -1333,8 +1341,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                     })
                   }
                 />
-                <TextFieldWithVisibility
+                <TextAreaFieldWithVisibility
                   label="工坊地址"
+                  rows={2}
                   value={draft.contactSection.address}
                   placeholder="工坊地址"
                   onChange={(val) =>
@@ -1357,8 +1366,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                     })
                   }
                 />
-                <TextFieldWithVisibility
+                <TextAreaFieldWithVisibility
                   label="開放營業時間"
+                  rows={2}
                   value={draft.contactSection.hours}
                   placeholder="開放時間"
                   onChange={(val) =>
@@ -1431,8 +1441,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                     })
                   }
                 />
-                <TextFieldWithVisibility
+                <TextAreaFieldWithVisibility
                   label="交通指引備註"
+                  rows={2}
                   value={draft.contactSection.mapNote}
                   placeholder="交通與抵達指引"
                   onChange={(val) =>
@@ -1682,8 +1693,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                 label="整個頁尾"
               />
             </div>
-            <TextFieldWithVisibility
+            <TextAreaFieldWithVisibility
               label="品牌頁尾標語"
+              rows={2}
               value={draft.footer.tagline}
               onChange={(val) =>
                 setDraft({ ...draft, footer: { ...draft.footer, tagline: val } })
@@ -1699,8 +1711,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                 })
               }
             />
-            <TextFieldWithVisibility
+            <TextAreaFieldWithVisibility
               label="地址與營業資訊行"
+              rows={2}
               value={draft.footer.addressLine}
               onChange={(val) =>
                 setDraft({ ...draft, footer: { ...draft.footer, addressLine: val } })
@@ -1830,8 +1843,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <TextFieldWithVisibility
+                      <TextAreaFieldWithVisibility
                         compact
+                        rows={2}
                         label="區塊前導小標"
                         value={block.subtitle}
                         placeholder="小標"
@@ -2005,7 +2019,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    {rev.note && <p className="text-xs text-[#51443d]">{rev.note}</p>}
+                    {rev.note && (
+                      <p className="text-xs text-[#51443d] whitespace-pre-line">{rev.note}</p>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRecallRevision(rev)}

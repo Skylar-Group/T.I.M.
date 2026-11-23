@@ -163,12 +163,12 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                 } p-8 md:p-12 flex flex-col justify-center space-y-4`}
               >
                 {isFieldVisible(block.fieldVisibility, 'subtitle') && block.subtitle && (
-                  <p className="text-xs font-medium tracking-[0.08em] text-[#73594c]">
+                  <p className="text-xs font-medium tracking-[0.08em] text-[#73594c] whitespace-pre-line">
                     {block.subtitle}
                   </p>
                 )}
                 {isFieldVisible(block.fieldVisibility, 'title') && block.title && (
-                  <h3 className="text-2xl md:text-3xl font-serif text-[#1b1c1c]">
+                  <h3 className="text-2xl md:text-3xl font-serif text-[#1b1c1c] whitespace-pre-line">
                     {block.title}
                   </h3>
                 )}
@@ -314,7 +314,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               )}
 
               {isFieldVisible(fv, 'summary') && selectedCourse.summary && (
-                <p className="text-[15px] text-[#51443d] leading-relaxed">
+                <p className="text-[15px] text-[#51443d] leading-relaxed whitespace-pre-line">
                   {selectedCourse.summary}
                 </p>
               )}
@@ -338,7 +338,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                       <Calendar className="w-4 h-4 text-[#8c5e43] mt-1 shrink-0" />
                       <div className="space-y-1.5">
                         {isFieldVisible(fv, 'scheduleText') && selectedCourse.scheduleText && (
-                          <p>{selectedCourse.scheduleText}</p>
+                          <p className="whitespace-pre-line">{selectedCourse.scheduleText}</p>
                         )}
                         {sortedSessionDates.length > 0 && (
                           <div className="space-y-1 text-xs text-[#73594c] tabular-nums">
@@ -447,20 +447,20 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     <p
                       className={`${
                         HERO_KICKER_SIZE_CLASS[siteContent.hero.kickerSize || 'xs']
-                      } font-medium tracking-[0.08em] text-[#73594c]`}
+                      } font-medium tracking-[0.08em] text-[#73594c] whitespace-pre-line`}
                     >
                       {siteContent.hero.kicker}
                     </p>
                   )}
                 {isFieldVisible(siteContent.hero.fieldVisibility, 'title') &&
                   siteContent.hero.title && (
-                    <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif text-[#1b1c1c] leading-[1.32] tracking-[0.02em]">
+                    <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif text-[#1b1c1c] leading-[1.32] tracking-[0.02em] whitespace-pre-line">
                       {siteContent.hero.title}
                     </h1>
                   )}
                 {isFieldVisible(siteContent.hero.fieldVisibility, 'subtitle') &&
                   siteContent.hero.subtitle && (
-                    <p className="text-base md:text-lg text-[#51443d] leading-relaxed max-w-xl">
+                    <p className="text-base md:text-lg text-[#51443d] leading-relaxed max-w-xl whitespace-pre-line">
                       {siteContent.hero.subtitle}
                     </p>
                   )}
@@ -523,7 +523,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                 >
                   {isFieldVisible(siteContent.philosophy.fieldVisibility, 'subtitle') &&
                     siteContent.philosophy.subtitle && (
-                      <p className="text-xs font-medium tracking-[0.08em] text-[#73594c]">
+                      <p className="text-xs font-medium tracking-[0.08em] text-[#73594c] whitespace-pre-line">
                         {siteContent.philosophy.subtitle}
                       </p>
                     )}
@@ -535,7 +535,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     )}
                   {isFieldVisible(siteContent.philosophy.fieldVisibility, 'description') &&
                     siteContent.philosophy.description && (
-                      <p className="text-[15px] md:text-base text-[#51443d] leading-relaxed">
+                      <p className="text-[15px] md:text-base text-[#51443d] leading-relaxed whitespace-pre-line">
                         {siteContent.philosophy.description}
                       </p>
                     )}
@@ -560,7 +560,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                       )}
                       {isFieldVisible(pillar.fieldVisibility, 'description') &&
                         pillar.description && (
-                          <p className="text-sm text-[#51443d] leading-relaxed">
+                          <p className="text-sm text-[#51443d] leading-relaxed whitespace-pre-line">
                             {pillar.description}
                           </p>
                         )}
@@ -582,7 +582,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                   </h2>
                 )}
                 {isFieldVisible(siteContent.coursesSection.fieldVisibility, 'subtitle') && (
-                  <p className="text-[15px] text-[#51443d]">
+                  <p className="text-[15px] text-[#51443d] whitespace-pre-line">
                     {siteContent.coursesSection.subtitle}
                   </p>
                 )}
@@ -651,7 +651,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                           </h3>
                         )}
                         {isFieldVisible(fv, 'summary') && course.summary && (
-                          <p className="text-sm text-[#51443d] line-clamp-2">{course.summary}</p>
+                          <p className="text-sm text-[#51443d] leading-relaxed line-clamp-2 whitespace-pre-line">
+                            {course.summary}
+                          </p>
                         )}
                         {sortedDates.length > 0 && isFieldVisible(fv, 'scheduleText') && (
                           <p className="text-xs text-[#73594c] tabular-nums">
@@ -695,7 +697,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     </h2>
                   )}
                   {isFieldVisible(siteContent.artisansSection.fieldVisibility, 'subtitle') && (
-                    <p className="text-[15px] text-[#51443d]">
+                    <p className="text-[15px] text-[#51443d] whitespace-pre-line">
                       {siteContent.artisansSection.subtitle}
                     </p>
                   )}
@@ -737,7 +739,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                         </div>
                       </div>
                       {isFieldVisible(afv, 'quote') && artisan.quote && (
-                        <p className="text-sm text-[#51443d] italic">「{artisan.quote}」</p>
+                        <p className="text-sm text-[#51443d] italic whitespace-pre-line">
+                          「{artisan.quote}」
+                        </p>
                       )}
                     </div>
                   );
@@ -765,7 +769,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               </h1>
             )}
             {isFieldVisible(csFv, 'subtitle') && (
-              <p className="text-[15px] text-[#51443d]">{siteContent.coursesSection.subtitle}</p>
+              <p className="text-[15px] text-[#51443d] whitespace-pre-line">
+                {siteContent.coursesSection.subtitle}
+              </p>
             )}
           </div>
         )}
@@ -839,7 +845,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
 
         {filteredCourses.length === 0 ? (
           isFieldVisible(csFv, 'emptyText') && (
-            <div className="bg-white border border-[#e0d8d3] rounded-lg p-12 text-center text-[#51443d]">
+            <div className="bg-white border border-[#e0d8d3] rounded-lg p-12 text-center text-[#51443d] whitespace-pre-line">
               {siteContent.coursesSection.emptyText}
             </div>
           )
@@ -905,13 +911,17 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                         </h2>
                       )}
                       {isFieldVisible(fv, 'summary') && course.summary && (
-                        <p className="text-sm text-[#51443d]">{course.summary}</p>
+                        <p className="text-sm text-[#51443d] leading-relaxed whitespace-pre-line">
+                          {course.summary}
+                        </p>
                       )}
                       {isFieldVisible(fv, 'artisanName') && course.artisanName && (
                         <p className="text-xs text-[#73594c]">授課職人：{course.artisanName}</p>
                       )}
                       {isFieldVisible(fv, 'scheduleText') && course.scheduleText && (
-                        <p className="text-xs text-[#73594c]">{course.scheduleText}</p>
+                        <p className="text-xs text-[#73594c] whitespace-pre-line">
+                          {course.scheduleText}
+                        </p>
                       )}
                       {sortedDates.length > 0 && isFieldVisible(fv, 'scheduleText') && (
                         <p className="text-xs text-[#51443d] tabular-nums leading-relaxed">
@@ -970,7 +980,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               </h1>
             )}
             {isFieldVisible(galFv, 'subtitle') && (
-              <p className="text-[15px] text-[#51443d]">{siteContent.gallerySection.subtitle}</p>
+              <p className="text-[15px] text-[#51443d] whitespace-pre-line">
+                {siteContent.gallerySection.subtitle}
+              </p>
             )}
           </div>
         )}
@@ -1032,7 +1044,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     <h2 className="text-xl font-serif text-[#1b1c1c]">{work.title}</h2>
                   )}
                   {isFieldVisible(wfv, 'story') && work.story && (
-                    <p className="text-sm text-[#51443d] leading-relaxed">{work.story}</p>
+                    <p className="text-sm text-[#51443d] leading-relaxed whitespace-pre-line">
+                      {work.story}
+                    </p>
                   )}
                 </div>
               </article>
@@ -1058,7 +1072,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               </h1>
             )}
             {isFieldVisible(artSecFv, 'subtitle') && (
-              <p className="text-[15px] text-[#51443d]">{siteContent.artisansSection.subtitle}</p>
+              <p className="text-[15px] text-[#51443d] whitespace-pre-line">
+                {siteContent.artisansSection.subtitle}
+              </p>
             )}
           </div>
         )}
@@ -1107,10 +1123,14 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     </h2>
                   )}
                   {isFieldVisible(afv, 'quote') && artisan.quote && (
-                    <p className="text-base font-serif text-[#70472d]">「{artisan.quote}」</p>
+                    <p className="text-base font-serif text-[#70472d] whitespace-pre-line">
+                      「{artisan.quote}」
+                    </p>
                   )}
                   {isFieldVisible(afv, 'bio') && artisan.bio && (
-                    <p className="text-[15px] text-[#51443d] leading-relaxed">{artisan.bio}</p>
+                    <p className="text-[15px] text-[#51443d] leading-relaxed whitespace-pre-line">
+                      {artisan.bio}
+                    </p>
                   )}
                 </div>
               </article>
@@ -1142,7 +1162,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
               </h1>
             )}
             {isFieldVisible(contactVis, 'subtitle') && (
-              <p className="text-[15px] text-[#51443d] leading-relaxed">
+              <p className="text-[15px] text-[#51443d] leading-relaxed whitespace-pre-line">
                 {siteContent.contactSection.subtitle}
               </p>
             )}
@@ -1154,7 +1174,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     <MapPin className="w-4 h-4 text-[#8c5e43] mt-1 shrink-0" />
                     <div>
                       <p className="font-medium text-[#1b1c1c]">工坊地址</p>
-                      <p>{siteContent.contactSection.address}</p>
+                      <p className="whitespace-pre-line">{siteContent.contactSection.address}</p>
                     </div>
                   </div>
                 )}
@@ -1163,7 +1183,7 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     <Clock className="w-4 h-4 text-[#8c5e43] mt-1 shrink-0" />
                     <div>
                       <p className="font-medium text-[#1b1c1c]">開放時間</p>
-                      <p>{siteContent.contactSection.hours}</p>
+                      <p className="whitespace-pre-line">{siteContent.contactSection.hours}</p>
                     </div>
                   </div>
                 )}
@@ -1174,7 +1194,9 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                     )}
                     {showEmail && <p>信箱：{siteContent.contactSection.email}</p>}
                     {showMapNote && (
-                      <p className="text-xs pt-1">{siteContent.contactSection.mapNote}</p>
+                      <p className="text-xs pt-1 whitespace-pre-line">
+                        {siteContent.contactSection.mapNote}
+                      </p>
                     )}
                   </div>
                 )}

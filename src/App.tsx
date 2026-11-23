@@ -224,11 +224,15 @@ function AtelierApp() {
                 )}
               {isFieldVisible(siteContent.footer.fieldVisibility, 'tagline') &&
                 siteContent.footer.tagline && (
-                  <p className="text-sm text-[#51443d]">{siteContent.footer.tagline}</p>
+                  <p className="text-sm text-[#51443d] leading-relaxed whitespace-pre-line">
+                    {siteContent.footer.tagline}
+                  </p>
                 )}
               {isFieldVisible(siteContent.footer.fieldVisibility, 'addressLine') &&
                 siteContent.footer.addressLine && (
-                  <p className="text-xs text-[#73594c]">{siteContent.footer.addressLine}</p>
+                  <p className="text-xs text-[#73594c] leading-relaxed whitespace-pre-line">
+                    {siteContent.footer.addressLine}
+                  </p>
                 )}
             </div>
 
@@ -272,7 +276,9 @@ function AtelierApp() {
               </div>
               {isFieldVisible(siteContent.footer.fieldVisibility, 'copyrightText') &&
                 siteContent.footer.copyrightText && (
-                  <p className="text-xs text-[#51443d]">{siteContent.footer.copyrightText}</p>
+                  <p className="text-xs text-[#51443d] whitespace-pre-line">
+                    {siteContent.footer.copyrightText}
+                  </p>
                 )}
             </div>
           </div>

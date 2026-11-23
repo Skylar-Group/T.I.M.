@@ -1292,9 +1292,13 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
                           {enr.cardLastFour ? `（末四碼 ${enr.cardLastFour}）` : ''}
                           {enr.transferLastFive ? `（後五碼 ${enr.transferLastFive}）` : ''}
                         </p>
-                        {enr.studentNote && <p className="text-xs">學員備註：{enr.studentNote}</p>}
+                        {enr.studentNote && (
+                          <p className="text-xs whitespace-pre-line">學員備註：{enr.studentNote}</p>
+                        )}
                         {enr.paymentStatus === 'refunded' && enr.refundReason && (
-                          <p className="text-xs text-[#ba1a1a]">退款說明：{enr.refundReason}</p>
+                          <p className="text-xs text-[#ba1a1a] whitespace-pre-line">
+                            退款說明：{enr.refundReason}
+                          </p>
                         )}
                       </div>
                       <div>
@@ -1539,8 +1543,8 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
                       <span className="block text-xs font-medium text-[#51443d]">
                         內部跟進處理備註（離開輸入框自動儲存）
                       </span>
-                      <input
-                        type="text"
+                      <textarea
+                        rows={2}
                         defaultValue={sub.adminReplyNote}
                         onBlur={async (e) => {
                           if (e.target.value !== sub.adminReplyNote) {
@@ -1549,7 +1553,7 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
                           }
                         }}
                         placeholder="輸入跟進聯絡進度或備忘事項..."
-                        className="w-full h-10 px-3.5 rounded-lg bg-[#fcf9f8] border border-[#e0d8d3] text-xs"
+                        className="w-full p-3 rounded-lg bg-[#fcf9f8] border border-[#e0d8d3] text-xs"
                       />
                     </label>
                   </div>
@@ -1990,6 +1994,8 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
                     ...COURSE_SCHEDULE_OPTIONS,
                   ].filter(Boolean)}
                   optionStorageKey="course_schedule"
+                  multilineCustom
+                  rows={2}
                   placeholder="輸入自訂開課時段說明..."
                 />
               </div>
@@ -2224,8 +2230,9 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({
                 })
               }
             />
-            <TextFieldWithVisibility
+            <TextAreaFieldWithVisibility
               label="職人代表引言"
+              rows={2}
               value={editingArtisan.quote || ''}
               onChange={(val) => setEditingArtisan({ ...editingArtisan, quote: val })}
               placeholder="例如：器皿真正的完成，是在每日盛裝食物與茶湯的那一刻。"

@@ -617,7 +617,11 @@ export const AdminAccounting: React.FC<AdminAccountingProps> = ({
                               : ''}
                           </p>
                         ) : (
-                          rec.note && <p className="text-[11px] text-[#73594c]">{rec.note}</p>
+                          rec.note && (
+                            <p className="text-[11px] text-[#73594c] whitespace-pre-line">
+                              {rec.note}
+                            </p>
+                          )
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-xs text-[#1b1c1c]">

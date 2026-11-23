@@ -422,7 +422,7 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#51443d]">
                   <div>
                     <p className="text-xs text-[#73594c]">預約時段與名額</p>
-                    <p>{item.sessionDate}</p>
+                    <p className="whitespace-pre-line">{item.sessionDate}</p>
                     <p className="tabular-nums">報名人數：{item.seats} 位</p>
                   </div>
                   <div>
@@ -436,7 +436,7 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
                       HK$ {item.totalAmount.toLocaleString()}
                     </p>
                     {item.paymentStatus === 'refunded' && (
-                      <p className="text-xs text-[#93000a] tabular-nums mt-0.5">
+                      <p className="text-xs text-[#93000a] tabular-nums mt-0.5 whitespace-pre-line">
                         已退回金額：HK$ {(item.refundAmount ?? item.totalAmount).toLocaleString()}
                         {item.refundReason ? `（${item.refundReason}）` : ''}
                       </p>
@@ -444,7 +444,9 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
                   </div>
                   <div>
                     <p className="text-xs text-[#73594c]">工坊核帳與備註</p>
-                    <p>{item.adminNote || (item.verifiedBy ? `由 ${item.verifiedBy} 核對確認` : '尚無管理員備註')}</p>
+                    <p className="whitespace-pre-line">
+                      {item.adminNote || (item.verifiedBy ? `由 ${item.verifiedBy} 核對確認` : '尚無管理員備註')}
+                    </p>
                   </div>
                 </div>
 
@@ -512,7 +514,9 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
                     <span className="tabular-nums">{formatDateTime(n.createdAt)}</span>
                   </div>
                   <h4 className="text-base font-serif text-[#1b1c1c]">{n.title}</h4>
-                  <p className="text-sm text-[#51443d]">{n.message}</p>
+                  <p className="text-sm text-[#51443d] leading-relaxed whitespace-pre-line">
+                    {n.message}
+                  </p>
                 </div>
                 {!n.isRead && (
                   <button
@@ -631,12 +635,12 @@ export const MemberCenter: React.FC<MemberCenterProps> = ({
             </div>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-[#51443d]">補充備註</span>
-              <input
-                type="text"
+              <textarea
+                rows={2}
                 value={proofNote}
                 onChange={(e) => setProofNote(e.target.value)}
                 placeholder="例如：已於今日下午三點完成轉帳"
-                className="w-full h-11 px-3.5 rounded-lg border border-[#e0d8d3] text-sm"
+                className="w-full p-3 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43]"
               />
             </label>
             <div className="flex justify-end gap-2 pt-2">

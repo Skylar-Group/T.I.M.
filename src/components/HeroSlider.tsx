@@ -139,7 +139,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
         <div className="bg-white border-t border-[#e0d8d3] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             {showCaption && (
-              <p className="text-xs text-[#51443d] truncate">{activeSlide.caption}</p>
+              <p className="text-xs text-[#51443d] leading-relaxed whitespace-pre-line">
+                {activeSlide.caption}
+              </p>
             )}
           </div>
 

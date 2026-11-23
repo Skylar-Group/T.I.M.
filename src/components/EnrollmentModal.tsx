@@ -484,7 +484,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
                     )}
                     {isFieldVisible(siteContent.paymentConfig.fieldVisibility, 'transferNotice') &&
                       siteContent.paymentConfig.transferNotice && (
-                        <p className="text-xs text-[#73594c] pt-1">
+                        <p className="text-xs text-[#73594c] pt-1 leading-relaxed whitespace-pre-line">
                           {siteContent.paymentConfig.transferNotice}
                         </p>
                       )}
@@ -533,12 +533,12 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
 
               <label className="block space-y-1">
                 <span className="text-xs font-medium text-[#51443d]">備註事項（如飲食過敏茶點、左撇子工具需求等）</span>
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={studentNote}
                   onChange={(e) => setStudentNote(e.target.value)}
                   placeholder="選填..."
-                  className="w-full h-11 px-3.5 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43]"
+                  className="w-full p-3 rounded-lg border border-[#e0d8d3] text-sm focus:outline-none focus:border-[#8c5e43]"
                 />
               </label>
 
