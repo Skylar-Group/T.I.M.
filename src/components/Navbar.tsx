@@ -22,10 +22,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const maxNavItems = Math.min(
+    12,
+    Math.max(1, Math.round(Number(siteContent.maxNavItems ?? 5)) || 5)
+  );
+
   const visibleNavItems = [...(siteContent.navItems || [])]
     .filter((item) => item.isVisible)
     .sort((a, b) => a.order - b.order)
-    .slice(0, 5);
+    .slice(0, maxNavItems);
 
   const ctaLabel = memberName
     ? unreadNotifications > 0
@@ -72,8 +77,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="shrink-0" />
         )}
 
-        {/* Zone 2: Clean single-line text nav links */}
-        <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-sm font-medium text-[#51443d] shrink-0">
+        {/* Zone 2: Clean text nav links */}
+        <nav className="hidden lg:flex flex-wrap items-center justify-center gap-x-5 gap-y-1 xl:gap-x-6 text-sm font-medium text-[#51443d] min-w-0">
           {visibleNavItems.map((item) => {
             const isActive =
               currentPage === item.pageKey ||

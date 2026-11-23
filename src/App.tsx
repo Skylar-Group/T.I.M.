@@ -49,6 +49,10 @@ function readCachedSiteContent(): SiteContent | null {
     return {
       ...DEFAULT_SITE_CONTENT,
       ...parsed,
+      maxNavItems: Math.min(
+        12,
+        Math.max(1, Math.round(Number(parsed.maxNavItems ?? DEFAULT_SITE_CONTENT.maxNavItems ?? 5)) || 5)
+      ),
       hero: {
         ...DEFAULT_SITE_CONTENT.hero,
         ...(parsed.hero || {}),

@@ -17,6 +17,7 @@ interface MediaPickerButtonProps {
   onUploaded: (asset: MediaAsset) => void;
   label?: string;
   allowBgRemoval?: boolean;
+  previewSize?: 'sm' | 'lg';
 }
 
 export const MediaPickerButton: React.FC<MediaPickerButtonProps> = ({
@@ -27,6 +28,7 @@ export const MediaPickerButton: React.FC<MediaPickerButtonProps> = ({
   onUploaded,
   label = '圖片設定',
   allowBgRemoval = false,
+  previewSize = 'sm',
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -144,15 +146,27 @@ export const MediaPickerButton: React.FC<MediaPickerButtonProps> = ({
       )}
 
       {value && (
-        <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-lg border border-[#e0d8d3] bg-[#fcf9f8]">
-          <div className="w-16 h-12 rounded overflow-hidden shrink-0 border border-[#e0d8d3] bg-[#fcf9f8] flex items-center justify-center p-1">
+        <div
+          className={`rounded-lg border border-[#e0d8d3] bg-[#fcf9f8] ${
+            previewSize === 'lg'
+              ? 'p-3.5 space-y-2.5'
+              : 'flex flex-wrap items-center gap-3 p-2.5'
+          }`}
+        >
+          <div
+            className={
+              previewSize === 'lg'
+                ? 'w-full max-w-2xl h-64 sm:h-72 rounded-lg overflow-hidden border border-[#e0d8d3] bg-white flex items-center justify-center p-1.5'
+                : 'w-16 h-12 rounded overflow-hidden shrink-0 border border-[#e0d8d3] bg-[#fcf9f8] flex items-center justify-center p-1'
+            }
+          >
             <MediaImage
               src={value}
               alt={label}
               className="w-full h-full object-contain"
             />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className={previewSize === 'lg' ? 'min-w-0' : 'min-w-0 flex-1'}>
             <p className="text-xs text-[#51443d] truncate">
               {value.startsWith('media://') ? `資料庫媒體 ID：${value.replace('media://', '')}` : value}
             </p>

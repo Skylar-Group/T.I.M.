@@ -484,6 +484,10 @@ export async function fetchSiteContent(): Promise<SiteContent> {
     return {
       ...DEFAULT_SITE_CONTENT,
       ...raw,
+      maxNavItems: Math.min(
+        12,
+        Math.max(1, Math.round(Number(raw.maxNavItems ?? DEFAULT_SITE_CONTENT.maxNavItems ?? 5)) || 5)
+      ),
       hero: {
         ...DEFAULT_SITE_CONTENT.hero,
         ...(rawHero || {}),
@@ -518,6 +522,7 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
   const rawKickerSize = content.hero.kickerSize;
   const cleanKickerSize: HeroKickerSize =
     rawKickerSize && rawKickerSize in HERO_KICKER_SIZE_CLASS ? rawKickerSize : 'xs';
+  const cleanMaxNavItems = Math.min(12, Math.max(1, Math.round(Number(content.maxNavItems ?? 5)) || 5));
 
   return {
     brandName: content.brandName,
@@ -525,6 +530,7 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
     brandLogoUrl: content.brandLogoUrl || '',
     brandLogoVisible: content.brandLogoVisible ?? true,
     navItems: content.navItems,
+    maxNavItems: cleanMaxNavItems,
     hero: {
       ...content.hero,
       kickerSize: cleanKickerSize,

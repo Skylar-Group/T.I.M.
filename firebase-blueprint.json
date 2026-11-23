@@ -10,6 +10,7 @@
         "brandLogoUrl": { "type": "string", "maxLength": 300 },
         "brandLogoVisible": { "type": "boolean" },
         "navItems": { "type": "array" },
+        "maxNavItems": { "type": "number" },
         "hero": { "type": "object" },
         "philosophy": { "type": "object" },
         "coursesSection": { "type": "object" },

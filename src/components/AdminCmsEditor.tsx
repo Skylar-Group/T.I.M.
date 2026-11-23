@@ -90,6 +90,10 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
       : [];
     return {
       ...cloned,
+      maxNavItems: Math.min(
+        12,
+        Math.max(1, Math.round(Number(cloned.maxNavItems ?? 5)) || 5)
+      ),
       hero: {
         ...cloned.hero,
         slides: existingSlides,
@@ -410,94 +414,153 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-[#1b1c1c]">頂部導覽選單項目（最多顯示前 5 項）</h4>
-                <button
-                  type="button"
-                  onClick={handleAddNavItem}
-                  className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#e8ded8] text-[#70472d] text-xs font-medium hover:bg-[#e0d8d3] cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  新增導覽項
-                </button>
-              </div>
-              {draft.navItems.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end p-3 rounded-lg bg-[#fcf9f8] border border-[#e0d8d3]"
-                >
-                  <label className="sm:col-span-4 block space-y-1">
-                    <span className="block text-[11px] font-medium text-[#51443d]">選單顯示文字</span>
-                    <input
-                      type="text"
-                      value={item.label}
-                      onChange={(e) => {
-                        const next = [...draft.navItems];
-                        next[idx] = { ...item, label: e.target.value };
-                        setDraft({ ...draft, navItems: next });
-                      }}
-                      placeholder="選單顯示文字"
-                      className="w-full h-10 px-3 rounded-lg bg-white border border-[#e0d8d3] text-sm"
-                    />
-                  </label>
-                  <label className="sm:col-span-3 block space-y-1">
-                    <span className="block text-[11px] font-medium text-[#51443d]">導向頁面</span>
-                    <select
-                      value={item.pageKey}
-                      onChange={(e) => {
-                        const next = [...draft.navItems];
-                        next[idx] = { ...item, pageKey: e.target.value as PublicPageKey };
-                        setDraft({ ...draft, navItems: next });
-                      }}
-                      className="w-full h-10 px-3 rounded-lg bg-white border border-[#e0d8d3] text-sm"
-                    >
-                      <option value="home">首頁</option>
-                      <option value="courses">課程總覽</option>
-                      <option value="gallery">作品藝廊</option>
-                      <option value="artisans">職人介紹</option>
-                      <option value="contact">聯絡預約</option>
-                      <option value="member">會員中心</option>
-                    </select>
-                  </label>
-                  <label className="sm:col-span-2 block space-y-1">
-                    <span className="block text-[11px] font-medium text-[#51443d]">排序順序</span>
-                    <input
-                      type="number"
-                      value={item.order}
-                      onChange={(e) => {
-                        const next = [...draft.navItems];
-                        next[idx] = { ...item, order: Number(e.target.value) };
-                        setDraft({ ...draft, navItems: next });
-                      }}
-                      className="w-full h-10 px-3 rounded-lg bg-white border border-[#e0d8d3] text-sm tabular-nums"
-                    />
-                  </label>
-                  <div className="sm:col-span-3 flex items-center justify-end gap-2 pb-1">
-                    <VisibilityToggle
-                      checked={item.isVisible}
-                      onChange={(val) => {
-                        const next = [...draft.navItems];
-                        next[idx] = { ...item, isVisible: val };
-                        setDraft({ ...draft, navItems: next });
-                      }}
-                      label="顯示"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft({
-                          ...draft,
-                          navItems: draft.navItems.filter((n) => n.id !== item.id),
-                        })
-                      }
-                      className="p-2 rounded-lg text-[#ba1a1a] hover:bg-[#ffdad6]/50 cursor-pointer"
-                      aria-label="刪除導覽項"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                const currentMaxNav = Math.min(
+                  12,
+                  Math.max(1, Math.round(Number(draft.maxNavItems ?? 5)) || 5)
+                );
+                const activeSortedIds = [...draft.navItems]
+                  .filter((n) => n.isVisible)
+                  .sort((a, b) => a.order - b.order)
+                  .map((n) => n.id);
+                return (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-medium text-[#1b1c1c]">
+                          頂部導覽選單項目（目前最多顯示前 {currentMaxNav} 項）
+                        </h4>
+                        <p className="text-xs text-[#73594c]">
+                          依「排序順序」由小到大排列，最多可自行設定顯示 1 至 12 個項目於網站頂部導覽列。
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="inline-flex items-center gap-2 px-3 h-8 rounded-lg border border-[#e0d8d3] bg-[#fcf9f8] text-xs font-medium text-[#51443d]">
+                          <span>前台顯示數量上限</span>
+                          <select
+                            value={currentMaxNav}
+                            onChange={(e) =>
+                              setDraft({
+                                ...draft,
+                                maxNavItems: Math.min(12, Math.max(1, Number(e.target.value) || 5)),
+                              })
+                            }
+                            className="h-6 px-2 rounded border border-[#e0d8d3] bg-white text-xs text-[#1b1c1c] tabular-nums cursor-pointer"
+                          >
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+                              <option key={num} value={num}>
+                                {num} 項
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleAddNavItem}
+                          className="inline-flex items-center gap-1.5 px-3 h-8 rounded-lg bg-[#e8ded8] text-[#70472d] text-xs font-medium hover:bg-[#e0d8d3] cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          新增導覽項
+                        </button>
+                      </div>
+                    </div>
+                    {draft.navItems.map((item, idx) => {
+                      const rankIndex = activeSortedIds.indexOf(item.id);
+                      const isShownInNav = item.isVisible && rankIndex !== -1 && rankIndex < currentMaxNav;
+                      const isOverLimit = item.isVisible && rankIndex >= currentMaxNav;
+                      return (
+                        <div
+                          key={item.id}
+                          className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end p-3 rounded-lg bg-[#fcf9f8] border border-[#e0d8d3]"
+                        >
+                          <label className="sm:col-span-4 block space-y-1">
+                            <span className="flex items-center justify-between gap-2 text-[11px] font-medium text-[#51443d]">
+                              <span>選單顯示文字</span>
+                              {isShownInNav && (
+                                <span className="text-[#70472d] tabular-nums">
+                                  前台第 {rankIndex + 1} 項
+                                </span>
+                              )}
+                              {isOverLimit && (
+                                <span className="text-[#ba1a1a] tabular-nums">
+                                  超出前 {currentMaxNav} 項上限（未顯示）
+                                </span>
+                              )}
+                            </span>
+                            <input
+                              type="text"
+                              value={item.label}
+                              onChange={(e) => {
+                                const next = [...draft.navItems];
+                                next[idx] = { ...item, label: e.target.value };
+                                setDraft({ ...draft, navItems: next });
+                              }}
+                              placeholder="選單顯示文字"
+                              className="w-full h-10 px-3 rounded-lg bg-white border border-[#e0d8d3] text-sm"
+                            />
+                          </label>
+                          <label className="sm:col-span-3 block space-y-1">
+                            <span className="block text-[11px] font-medium text-[#51443d]">導向頁面</span>
+                            <select
+                              value={item.pageKey}
+                              onChange={(e) => {
+                                const next = [...draft.navItems];
+                                next[idx] = { ...item, pageKey: e.target.value as PublicPageKey };
+                                setDraft({ ...draft, navItems: next });
+                              }}
+                              className="w-full h-10 px-3 rounded-lg bg-white border border-[#e0d8d3] text-sm"
+                            >
+                              <option value="home">首頁</option>
+                              <option value="courses">課程總覽</option>
+                              <option value="gallery">作品藝廊</option>
+                              <option value="artisans">職人介紹</option>
+                              <option value="contact">聯絡預約</option>
+                              <option value="member">會員中心</option>
+                            </select>
+                          </label>
+                          <label className="sm:col-span-2 block space-y-1">
+                            <span className="block text-[11px] font-medium text-[#51443d]">排序順序</span>
+                            <input
+                              type="number"
+                              value={item.order}
+                              onChange={(e) => {
+                                const next = [...draft.navItems];
+                                next[idx] = { ...item, order: Number(e.target.value) };
+                                setDraft({ ...draft, navItems: next });
+                              }}
+                              className="w-full h-10 px-3 rounded-lg bg-white border border-[#e0d8d3] text-sm tabular-nums"
+                            />
+                          </label>
+                          <div className="sm:col-span-3 flex items-center justify-end gap-2 pb-1">
+                            <VisibilityToggle
+                              checked={item.isVisible}
+                              onChange={(val) => {
+                                const next = [...draft.navItems];
+                                next[idx] = { ...item, isVisible: val };
+                                setDraft({ ...draft, navItems: next });
+                              }}
+                              label="顯示"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDraft({
+                                  ...draft,
+                                  navItems: draft.navItems.filter((n) => n.id !== item.id),
+                                })
+                              }
+                              className="p-2 rounded-lg text-[#ba1a1a] hover:bg-[#ffdad6]/50 cursor-pointer"
+                              aria-label="刪除導覽項"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -786,6 +849,7 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                         category="cms"
                         mediaAssets={mediaAssets}
                         onUploaded={onMediaUploaded}
+                        previewSize="lg"
                       />
 
                       <TextAreaFieldWithVisibility

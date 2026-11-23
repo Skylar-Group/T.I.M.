@@ -22,6 +22,7 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     { id: 'nav-artisans', label: '職人介紹', pageKey: 'artisans', isVisible: true, order: 4 },
     { id: 'nav-contact', label: '聯絡預約', pageKey: 'contact', isVisible: true, order: 5 },
   ],
+  maxNavItems: 5,
   hero: {
     isVisible: true,
     kicker: '台北赤峰街手造生活美學空間',

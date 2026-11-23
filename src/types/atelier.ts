@@ -75,6 +75,7 @@ export interface SiteContent {
   brandLogoUrl: string;
   brandLogoVisible: boolean;
   navItems: NavItem[];
+  maxNavItems?: number;
   hero: {
     isVisible: boolean;
     kicker: string;

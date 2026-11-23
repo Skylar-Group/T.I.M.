@@ -58,7 +58,7 @@ service cloud.firestore {
         'coursesSection', 'gallerySection', 'artisansSection', 'contactSection',
         'paymentConfig', 'footer', 'customBlocks', 'updatedBy', 'updatedAt'
       ]) && data.keys().hasOnly([
-        'brandName', 'brandVisible', 'brandLogoUrl', 'brandLogoVisible', 'navItems', 'hero', 'philosophy',
+        'brandName', 'brandVisible', 'brandLogoUrl', 'brandLogoVisible', 'navItems', 'maxNavItems', 'hero', 'philosophy',
         'coursesSection', 'gallerySection', 'artisansSection', 'contactSection',
         'paymentConfig', 'footer', 'customBlocks', 'updatedBy', 'updatedAt'
       ]) &&
@@ -67,6 +67,7 @@ service cloud.firestore {
       (!('brandLogoUrl' in data) || (data.brandLogoUrl is string && data.brandLogoUrl.size() <= 300)) &&
       (!('brandLogoVisible' in data) || data.brandLogoVisible is bool) &&
       data.navItems is list && data.navItems.size() <= 12 &&
+      (!('maxNavItems' in data) || (data.maxNavItems is number && data.maxNavItems >= 1 && data.maxNavItems <= 12)) &&
       data.hero is map &&
       data.philosophy is map &&
       data.coursesSection is map &&
