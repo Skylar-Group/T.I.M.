@@ -11,6 +11,8 @@ import {
   CustomBlock,
   HERO_KICKER_SIZE_CLASS,
   HERO_KICKER_SIZE_OPTIONS,
+  HERO_SLIDE_ASPECT_OPTIONS,
+  HERO_SLIDE_LAYOUT_OPTIONS,
   HeroSlide,
   isFieldVisible,
   MediaAsset,
@@ -99,6 +101,9 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
         slides: existingSlides,
         slideAutoPlay: cloned.hero?.slideAutoPlay ?? true,
         slideIntervalSec: cloned.hero?.slideIntervalSec ?? 5,
+        slideLayout: cloned.hero?.slideLayout || '5-7',
+        slideAspectRatio: cloned.hero?.slideAspectRatio || '16-10',
+        slideImageFit: cloned.hero?.slideImageFit || 'cover',
       },
       brandLogoUrl: cloned.brandLogoUrl ?? '',
       brandLogoVisible: cloned.brandLogoVisible ?? true,
@@ -779,6 +784,112 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                 </div>
               </div>
 
+              {/* Storefront Hero Slide Viewport Ratio & Layout Settings */}
+              <div className="bg-[#fcf9f8] border border-[#e0d8d3] rounded-lg p-4 space-y-4">
+                <div>
+                  <span className="block text-xs font-medium text-[#1b1c1c]">
+                    前台主視覺幻燈片視窗尺寸與比例設定
+                  </span>
+                  <span className="block text-[11px] text-[#73594c]">
+                    調整前台首頁主視覺中「文字區與幻燈片視窗的寬度比例」以及「幻燈片視窗長寬比」。
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-medium text-[#51443d]">
+                    1. 版面寬度配置（文字區：幻燈片視窗）
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {HERO_SLIDE_LAYOUT_OPTIONS.map((opt) => {
+                      const active = (draft.hero.slideLayout || '5-7') === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              hero: { ...draft.hero, slideLayout: opt.value },
+                            })
+                          }
+                          title={opt.desc}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                            active
+                              ? 'bg-[#8c5e43] border-[#8c5e43] text-white'
+                              : 'bg-white border-[#e0d8d3] text-[#51443d] hover:bg-[#e8ded8]/60'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-medium text-[#51443d]">
+                    2. 幻燈片視窗長寬比例
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {HERO_SLIDE_ASPECT_OPTIONS.map((opt) => {
+                      const active = (draft.hero.slideAspectRatio || '16-10') === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              hero: { ...draft.hero, slideAspectRatio: opt.value },
+                            })
+                          }
+                          className={`px-3 h-8 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                            active
+                              ? 'bg-[#8c5e43] border-[#8c5e43] text-white'
+                              : 'bg-white border-[#e0d8d3] text-[#51443d] hover:bg-[#e8ded8]/60'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="block text-xs font-medium text-[#51443d]">
+                    3. 圖片在視窗內的顯示方式
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'cover' as const, label: '滿版填滿視窗（無白邊・推薦）' },
+                      { value: 'contain' as const, label: '完整呈現原圖（不裁切邊緣）' },
+                    ].map((opt) => {
+                      const active = (draft.hero.slideImageFit || 'cover') === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              hero: { ...draft.hero, slideImageFit: opt.value },
+                            })
+                          }
+                          className={`px-3 h-8 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                            active
+                              ? 'bg-[#8c5e43] border-[#8c5e43] text-white'
+                              : 'bg-white border-[#e0d8d3] text-[#51443d] hover:bg-[#e8ded8]/60'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {(draft.hero.slides || []).length === 0 ? (
                 <div className="p-6 rounded-lg bg-[#fcf9f8] border border-dashed border-[#e0d8d3] text-center text-xs text-[#73594c]">
                   目前尚無幻燈片圖片，請點擊右上方「新增幻燈片 Slide」加入首頁主視覺輪播圖。
@@ -849,7 +960,6 @@ export const AdminCmsEditor: React.FC<AdminCmsEditorProps> = ({
                         category="cms"
                         mediaAssets={mediaAssets}
                         onUploaded={onMediaUploaded}
-                        previewSize="lg"
                       />
 
                       <TextAreaFieldWithVisibility

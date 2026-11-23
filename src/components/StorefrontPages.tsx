@@ -434,14 +434,35 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
   if (page === 'home') {
     const featuredCourses = visibleCourses.slice(0, 3);
     const featuredArtisans = visibleArtisans.slice(0, 3);
+    const slideLayout = siteContent.hero.slideLayout || '5-7';
+    const isFullStacked = slideLayout === 'full-bottom' || slideLayout === 'full-top';
+    const textColClass =
+      !siteContent.hero.imageVisible || isFullStacked
+        ? 'lg:col-span-12'
+        : slideLayout === '4-8'
+        ? 'lg:col-span-4'
+        : slideLayout === '6-6'
+        ? 'lg:col-span-6'
+        : 'lg:col-span-5';
+    const sliderColClass = isFullStacked
+      ? 'lg:col-span-12'
+      : slideLayout === '4-8'
+      ? 'lg:col-span-8'
+      : slideLayout === '6-6'
+      ? 'lg:col-span-6'
+      : 'lg:col-span-7';
 
     return (
       <div>
         {/* Hero Section */}
         {siteContent.hero.isVisible && (
-          <section className="max-w-[1280px] mx-auto px-5 md:px-12 py-12 md:py-20">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
-              <div className="lg:col-span-6 flex flex-col justify-center space-y-6 py-4">
+          <section className="max-w-[1360px] mx-auto px-5 md:px-12 py-10 md:py-16">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-stretch">
+              <div
+                className={`${textColClass} ${
+                  slideLayout === 'full-top' ? 'order-2' : 'order-1'
+                } flex flex-col justify-center space-y-6 py-2`}
+              >
                 {isFieldVisible(siteContent.hero.fieldVisibility, 'kicker') &&
                   siteContent.hero.kicker && (
                     <p
@@ -454,13 +475,17 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                   )}
                 {isFieldVisible(siteContent.hero.fieldVisibility, 'title') &&
                   siteContent.hero.title && (
-                    <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-serif text-[#1b1c1c] leading-[1.32] tracking-[0.02em] whitespace-pre-line">
+                    <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-serif text-[#1b1c1c] leading-[1.32] tracking-[0.02em] whitespace-pre-line">
                       {siteContent.hero.title}
                     </h1>
                   )}
                 {isFieldVisible(siteContent.hero.fieldVisibility, 'subtitle') &&
                   siteContent.hero.subtitle && (
-                    <p className="text-base md:text-lg text-[#51443d] leading-relaxed max-w-xl whitespace-pre-line">
+                    <p
+                      className={`text-base md:text-lg text-[#51443d] leading-relaxed ${
+                        isFullStacked ? 'max-w-3xl' : 'max-w-xl'
+                      } whitespace-pre-line`}
+                    >
                       {siteContent.hero.subtitle}
                     </p>
                   )}
@@ -496,6 +521,11 @@ export const StorefrontPages: React.FC<StorefrontPagesProps> = ({
                   altTitle={siteContent.hero.title}
                   autoPlay={siteContent.hero.slideAutoPlay ?? true}
                   intervalSec={siteContent.hero.slideIntervalSec ?? 5}
+                  aspectRatio={siteContent.hero.slideAspectRatio || '16-10'}
+                  imageFit={siteContent.hero.slideImageFit || 'cover'}
+                  containerClassName={`${sliderColClass} ${
+                    slideLayout === 'full-top' ? 'order-1' : 'order-2'
+                  }`}
                 />
               )}
             </div>

@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import { HeroSlide } from '../types/atelier';
+import {
+  HERO_SLIDE_ASPECT_CLASS,
+  HeroSlide,
+  HeroSlideAspectRatio,
+  HeroSlideImageFit,
+} from '../types/atelier';
 import { MediaImage } from './MediaImage';
 
 interface HeroSliderProps {
@@ -9,6 +14,9 @@ interface HeroSliderProps {
   altTitle: string;
   autoPlay?: boolean;
   intervalSec?: number;
+  aspectRatio?: HeroSlideAspectRatio;
+  imageFit?: HeroSlideImageFit;
+  containerClassName?: string;
 }
 
 export const HeroSlider: React.FC<HeroSliderProps> = ({
@@ -17,6 +25,9 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   altTitle,
   autoPlay = true,
   intervalSec = 5,
+  aspectRatio = '16-10',
+  imageFit = 'cover',
+  containerClassName = 'lg:col-span-7',
 }) => {
   const visibleSlides: HeroSlide[] = React.useMemo(() => {
     const list = (slides || [])
@@ -82,6 +93,12 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     }
   };
 
+  const aspectClass = HERO_SLIDE_ASPECT_CLASS[aspectRatio] || '';
+  const isFixedAspect = Boolean(aspectClass);
+  const imgClass = isFixedAspect
+    ? `w-full h-full ${imageFit === 'contain' ? 'object-contain' : 'object-cover'} block transition-opacity duration-300`
+    : `w-full h-auto max-h-[720px] ${imageFit === 'contain' ? 'object-contain' : 'object-cover'} block transition-opacity duration-300`;
+
   return (
     <div
       tabIndex={0}
@@ -103,14 +120,16 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       }}
       aria-roledescription="carousel"
       aria-label={altTitle}
-      className="lg:col-span-6 rounded-lg overflow-hidden border border-[#e0d8d3] shadow-warm bg-[#fcf9f8] flex flex-col self-center focus:outline-none focus:ring-2 focus:ring-[#8c5e43]/30"
+      className={`${containerClassName} rounded-lg overflow-hidden border border-[#e0d8d3] shadow-warm bg-[#fcf9f8] flex flex-col self-center w-full focus:outline-none focus:ring-2 focus:ring-[#8c5e43]/30`}
     >
-      <div className="relative w-full bg-[#fcf9f8] flex items-center justify-center overflow-hidden">
+      <div
+        className={`relative w-full bg-[#fcf9f8] flex items-center justify-center overflow-hidden ${aspectClass}`}
+      >
         <MediaImage
           key={activeSlide.id + activeSlide.imageUrl}
           src={activeSlide.imageUrl}
           alt={activeSlide.caption || altTitle}
-          className="w-full h-auto max-h-[540px] object-contain block transition-opacity duration-300"
+          className={imgClass}
         />
 
         {hasMultiple && (

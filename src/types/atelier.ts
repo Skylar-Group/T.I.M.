@@ -69,6 +69,43 @@ export const HERO_KICKER_SIZE_OPTIONS: Array<{ value: HeroKickerSize; label: str
   { value: '3xl', label: '醒目', px: '30px' },
 ];
 
+export type HeroSlideLayout = '6-6' | '5-7' | '4-8' | 'full-bottom' | 'full-top';
+export type HeroSlideAspectRatio = '16-10' | '16-9' | '3-2' | '4-3' | '21-9' | 'auto-lg';
+export type HeroSlideImageFit = 'cover' | 'contain';
+
+export const HERO_SLIDE_LAYOUT_OPTIONS: Array<{
+  value: HeroSlideLayout;
+  label: string;
+  desc: string;
+}> = [
+  { value: '6-6', label: '經典對半 50 : 50', desc: '文字 6 欄 / 幻燈片 6 欄' },
+  { value: '5-7', label: '寬幅視覺 42 : 58（推薦）', desc: '文字 5 欄 / 幻燈片 7 欄' },
+  { value: '4-8', label: '大圖焦點 33 : 67', desc: '文字 4 欄 / 幻燈片 8 欄' },
+  { value: 'full-bottom', label: '上文下圖 · 全寬大視窗', desc: '幻燈片佔滿 100% 頁面寬度' },
+  { value: 'full-top', label: '上圖下文 · 全寬大視窗', desc: '幻燈片置頂佔滿 100% 寬度' },
+];
+
+export const HERO_SLIDE_ASPECT_OPTIONS: Array<{
+  value: HeroSlideAspectRatio;
+  label: string;
+}> = [
+  { value: '16-10', label: '16 : 10 黃金寬幅（推薦）' },
+  { value: '16-9', label: '16 : 9 寬螢幕比例' },
+  { value: '3-2', label: '3 : 2 攝影比例' },
+  { value: '4-3', label: '4 : 3 加高畫框' },
+  { value: '21-9', label: '21 : 9 電影寬景' },
+  { value: 'auto-lg', label: '依原圖比例（最高 720px）' },
+];
+
+export const HERO_SLIDE_ASPECT_CLASS: Record<HeroSlideAspectRatio, string> = {
+  '16-10': 'aspect-[16/10]',
+  '16-9': 'aspect-video',
+  '3-2': 'aspect-[3/2]',
+  '4-3': 'aspect-[4/3]',
+  '21-9': 'aspect-[21/9]',
+  'auto-lg': '',
+};
+
 export interface SiteContent {
   brandName: string;
   brandVisible: boolean;
@@ -89,6 +126,9 @@ export interface SiteContent {
     slides?: HeroSlide[];
     slideAutoPlay?: boolean;
     slideIntervalSec?: number;
+    slideLayout?: HeroSlideLayout;
+    slideAspectRatio?: HeroSlideAspectRatio;
+    slideImageFit?: HeroSlideImageFit;
     fieldVisibility?: FieldVisibilityMap;
   };
   philosophy: {

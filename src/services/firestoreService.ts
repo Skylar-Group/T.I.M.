@@ -40,7 +40,12 @@ import {
   Enrollment,
   GalleryWork,
   HERO_KICKER_SIZE_CLASS,
+  HERO_SLIDE_ASPECT_CLASS,
+  HERO_SLIDE_LAYOUT_OPTIONS,
   HeroKickerSize,
+  HeroSlideAspectRatio,
+  HeroSlideImageFit,
+  HeroSlideLayout,
   InstructorAttendanceStatus,
   InstructorSessionRecord,
   MediaAsset,
@@ -498,6 +503,17 @@ export async function fetchSiteContent(): Promise<SiteContent> {
         slides: hydratedSlides,
         slideAutoPlay: rawHero?.slideAutoPlay ?? true,
         slideIntervalSec: rawHero?.slideIntervalSec ?? 5,
+        slideLayout: HERO_SLIDE_LAYOUT_OPTIONS.some((o) => o.value === rawHero?.slideLayout)
+          ? (rawHero?.slideLayout as HeroSlideLayout)
+          : '5-7',
+        slideAspectRatio:
+          rawHero?.slideAspectRatio && rawHero.slideAspectRatio in HERO_SLIDE_ASPECT_CLASS
+            ? (rawHero.slideAspectRatio as HeroSlideAspectRatio)
+            : '16-10',
+        slideImageFit:
+          rawHero?.slideImageFit === 'contain' || rawHero?.slideImageFit === 'cover'
+            ? rawHero.slideImageFit
+            : 'cover',
       },
       brandLogoUrl: raw.brandLogoUrl ?? '',
       brandLogoVisible: raw.brandLogoVisible ?? true,
@@ -523,6 +539,17 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
   const cleanKickerSize: HeroKickerSize =
     rawKickerSize && rawKickerSize in HERO_KICKER_SIZE_CLASS ? rawKickerSize : 'xs';
   const cleanMaxNavItems = Math.min(12, Math.max(1, Math.round(Number(content.maxNavItems ?? 5)) || 5));
+  const cleanSlideLayout: HeroSlideLayout = HERO_SLIDE_LAYOUT_OPTIONS.some(
+    (o) => o.value === content.hero.slideLayout
+  )
+    ? (content.hero.slideLayout as HeroSlideLayout)
+    : '5-7';
+  const cleanSlideAspect: HeroSlideAspectRatio =
+    content.hero.slideAspectRatio && content.hero.slideAspectRatio in HERO_SLIDE_ASPECT_CLASS
+      ? content.hero.slideAspectRatio
+      : '16-10';
+  const cleanSlideFit: HeroSlideImageFit =
+    content.hero.slideImageFit === 'contain' ? 'contain' : 'cover';
 
   return {
     brandName: content.brandName,
@@ -538,6 +565,9 @@ function sanitizeSiteContentForWrite(content: SiteContent, updatedBy: string) {
       slides: cleanSlides,
       slideAutoPlay: content.hero.slideAutoPlay ?? true,
       slideIntervalSec: Math.min(30, Math.max(2, Number(content.hero.slideIntervalSec || 5))),
+      slideLayout: cleanSlideLayout,
+      slideAspectRatio: cleanSlideAspect,
+      slideImageFit: cleanSlideFit,
     },
     philosophy: content.philosophy,
     coursesSection: content.coursesSection,

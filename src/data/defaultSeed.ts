@@ -62,6 +62,9 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     ],
     slideAutoPlay: true,
     slideIntervalSec: 5,
+    slideLayout: '5-7',
+    slideAspectRatio: '16-10',
+    slideImageFit: 'cover',
   },
   philosophy: {
     isVisible: true,
